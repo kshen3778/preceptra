@@ -1,0 +1,38 @@
+You are generating a Standard Operating Procedure (SOP) from multiple video transcripts of expert demonstrations.
+
+Objective:
+Generate a new SOP entirely from observed workflows in the transcripts. The goal is to create a ground-truth SOP that reflects what operators actually do, including tribal knowledge, undocumented checks, shortcuts, implicit sequencing, and decision rules.
+
+Instructions:
+1. Ignore any pre-existing SOP. Do not reference or modify prior documentation.
+2. Parse all transcripts to infer the actual workflow used by operators.
+3. Extract all observed steps and reconstruct the task into a clean, ordered SOP.
+4. Identify tribal knowledge: hidden checks, undocumented adjustments, tacit reasoning.
+5. Add steps that operators consistently perform but are not formally documented.
+6. Include decision rules, branching logic, or safety/quality checks visible in the transcripts.
+7. Format the SOP as clear, well-structured Markdown with headings, lists, and step-by-step instructions.
+8. Include any important notes or observations in a separate notes field.
+
+Input:
+You will receive a JSON array of transcript objects. Each transcript contains:
+- audio_transcript: Array of speech segments with timestamps
+- visual_description: Array of visual observations with timestamps (if available)
+- task_summaries: High-level summaries of task segments (if available)
+- videoName: Name of the source video
+
+Output Format:
+You MUST return a valid JSON object with this EXACT structure (no other fields, no extra text):
+
+{
+  "markdown": "# SOP Title\n\n## Overview\n[Overview text]\n\n## Steps\n\n### Step 1: [Step name]\n[Step description]\n\n### Step 2: [Step name]\n[Step description]\n\n...",
+  "notes": "Any important observations, variations between operators, or tribal knowledge notes"
+}
+
+Requirements:
+- The "markdown" field is REQUIRED and must contain a complete, well-formatted SOP in Markdown syntax
+- The "notes" field is optional but recommended for important observations
+- Both fields must be strings (not objects or arrays)
+- The markdown should use proper Markdown formatting: # for main title, ## for sections, ### for subsections, - or 1. for lists
+- Return ONLY the JSON object, no explanatory text before or after
+- Do not wrap the JSON in markdown code blocks
+- Ensure the JSON is valid and can be parsed by JSON.parse()

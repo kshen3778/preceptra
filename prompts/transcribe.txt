@@ -1,0 +1,110 @@
+Transcribe the following video/audio accurately.
+Output JSON encoded in UTF-8.
+AUDIO TRANSCRIPTION REQUIREMENTS (1-second resolution):
+
+
+Break spoken audio into 5-second intervals.
+
+
+For each interval return:
+
+
+"start": timestamp (seconds)
+
+
+"end": timest   amp (seconds)
+
+
+"speech": words spoken only in that second
+
+
+
+
+If no speech occurs during a second, use "speech": "".
+
+
+Do not infer or guess missing speech.
+
+
+Only use punctuation if clearly spoken.
+
+
+VISUAL DESCRIPTION REQUIREMENTS (10-second resolution):
+
+
+Break the visual/scene content into 10-second intervals.
+
+
+For each interval return:
+
+
+"start": timestamp (seconds)
+
+
+"end": timestamp (seconds)
+
+
+"visual": concise description of what can be seen (actions, objects, on-screen text, motion, etc.)
+
+
+
+
+Keep visual descriptions factual and neutral.
+
+
+Do not describe unobservable intentions or emotions.
+
+
+Do not invent objects or events.
+
+
+
+
+FINAL STRUCTURE:
+{
+  "audio_transcript": [
+    {
+      "start": 0,
+      "end": 1,
+      "speech": "hello everyone"
+    },
+    {
+      "start": 1,
+      "end": 2,
+      "speech": "welcome to the session"
+    }
+  ],
+  "visual_description": [
+    {
+      "start": 0,
+      "end": 10,
+      "visual": "A presenter sits at a desk in front of a laptop. A whiteboard is behind them with diagrams. They occasionally gesture with their hands."
+    },
+    {
+      "start": 10,
+      "end": 20,
+      "visual": "Close-up of the presenter speaking. Camera slowly zooms in. The whiteboard is still visible behind them."
+    }
+  ],
+  "task_summaries": [
+    {
+      "time_range": "0-45s",
+      "summary": "Presenter introduces the topic and explains the objective of the lesson."
+    },
+    {
+      "time_range": "45-120s",
+      "summary": "Presenter begins demonstrating the first example on the board."
+    }
+  ]
+}
+
+TASK SUMMARY REQUIREMENTS:
+Create a list summarizing major topic sections with:
+
+
+"time_range": "<start>-<end>s"
+
+
+"summary": "<8-14 word concise topic description>"
+
+
