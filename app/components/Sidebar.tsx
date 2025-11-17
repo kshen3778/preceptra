@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Upload, BookOpen, MessageSquare } from 'lucide-react';
+import { Upload, BookOpen, MessageSquare, LogOut } from 'lucide-react';
+import { Button } from './ui/button';
 
 const navigation = [
   { name: 'Upload', href: '/upload', icon: Upload },
@@ -13,11 +14,27 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-background">
       <div className="flex h-16 items-center border-b px-6">
-        <h1 className="text-xl font-bold">Tribal Knowledge</h1>
+        <Link href="/" className="hover:opacity-80 transition-opacity">
+          <div className="flex flex-col">
+            <span className="text-xl font-bold">Preceptra</span>
+            <span className="text-xs text-muted-foreground">by MLink</span>
+          </div>
+        </Link>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
@@ -40,6 +57,16 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      <div className="border-t p-4">
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </div>
     </div>
   );
 }

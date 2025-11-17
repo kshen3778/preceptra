@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="mb-12 text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Tribal Knowledge</h1>
+        <h1 className="mb-4 text-4xl font-bold">Welcome to Preceptra by MLink</h1>
         <p className="text-lg text-muted-foreground">
           Transform expert demonstrations into actionable knowledge through AI-powered transcription and analysis.
         </p>
@@ -21,7 +21,7 @@ export default function Home() {
             </div>
             <CardTitle>Upload & Transcribe</CardTitle>
             <CardDescription>
-              Upload task videos and generate accurate transcriptions using Gemini AI.
+              Upload task videos and generate accurate transcriptions using AI.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -55,7 +55,7 @@ export default function Home() {
             </div>
             <CardTitle>Ask Questions</CardTitle>
             <CardDescription>
-              Get answers from your knowledge base using RAG-powered question answering.
+              Get answers from your knowledge base using your trribes knowledge.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -69,10 +69,8 @@ export default function Home() {
       <div className="mt-12 rounded-lg border bg-muted/50 p-6">
         <h2 className="mb-2 text-xl font-semibold">Getting Started</h2>
         <ol className="list-inside list-decimal space-y-2 text-muted-foreground">
-          <li>Create task folders in the <code className="rounded bg-muted px-1 py-0.5">/tasks</code> directory</li>
-          <li>Add video files (.mp4) to <code className="rounded bg-muted px-1 py-0.5">/tasks/&lt;taskName&gt;/videos</code></li>
           <li>Use the Upload page to transcribe videos</li>
-          <li>Generate SOPs from the Knowledge page</li>
+          <li>Generate SOPs ßfrom the Knowledge page</li>
           <li>Ask questions on the Questions page</li>
         </ol>
       </div>

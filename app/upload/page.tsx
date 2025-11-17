@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Select } from '../components/ui/select';
-import { Loader2, Video, CheckCircle2, Upload, X } from 'lucide-react';
+import { Input } from '../components/ui/input';
+import { Loader2, Video, CheckCircle2, Upload, X, Plus } from 'lucide-react';
 
 interface Video {
   name: string;
@@ -21,6 +22,9 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [newTaskName, setNewTaskName] = useState('');
+  const [creatingTask, setCreatingTask] = useState(false);
 
   // Load tasks on mount
   useEffect(() => {
@@ -169,23 +173,121 @@ export default function UploadPage() {
     }
   };
 
+  const handleCreateTask = async () => {
+    if (!newTaskName.trim()) {
+      alert('Please enter a task name');
+      return;
+    }
+
+    setCreatingTask(true);
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskName: newTaskName.trim() }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Reload tasks and select the newly created task
+        await loadTasks();
+        setSelectedTask(data.taskName);
+        setNewTaskName('');
+        setShowCreateTask(false);
+      } else {
+        const error = await response.json();
+        alert(`Failed to create task: ${error.details || error.error}`);
+      }
+    } catch (error) {
+      console.error('Create task error:', error);
+      alert('Failed to create task');
+    } finally {
+      setCreatingTask(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Upload & Transcribe</h1>
         <p className="text-muted-foreground">
-          Select a task and transcribe videos using Gemini AI.
+          Select a task and transcribe videos using your tribe's knowledge base. New tasks can be created by clicking the "Create Task" button.
         </p>
       </div>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Select Task</CardTitle>
-          <CardDescription>
-            Choose a task folder to view available videos
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Select Task</CardTitle>
+              <CardDescription>
+                Choose a task folder to view available videos
+              </CardDescription>
+            </div>
+            <Button
+              onClick={() => setShowCreateTask(!showCreateTask)}
+              variant="outline"
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Task
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {showCreateTask && (
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+              <div className="space-y-2">
+                <label htmlFor="new-task-name" className="text-sm font-medium">
+                  Task Name
+                </label>
+                <Input
+                  id="new-task-name"
+                  type="text"
+                  placeholder="Enter task name"
+                  value={newTaskName}
+                  onChange={(e) => setNewTaskName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateTask();
+                    } else if (e.key === 'Escape') {
+                      setShowCreateTask(false);
+                      setNewTaskName('');
+                    }
+                  }}
+                  disabled={creatingTask}
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCreateTask}
+                  disabled={creatingTask || !newTaskName.trim()}
+                  size="sm"
+                >
+                  {creatingTask ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create'
+                  )}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowCreateTask(false);
+                    setNewTaskName('');
+                  }}
+                  variant="outline"
+                  size="sm"
+                  disabled={creatingTask}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
           <Select
             value={selectedTask}
             onChange={(e) => setSelectedTask(e.target.value)}

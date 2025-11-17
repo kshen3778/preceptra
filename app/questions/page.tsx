@@ -81,7 +81,7 @@ export default function QuestionsPage() {
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Ask Questions</h1>
         <p className="text-muted-foreground">
-          Get answers from your knowledge base using RAG-powered question answering.
+          Get answers from your tribe's knowledge base.
         </p>
       </div>
 
@@ -89,7 +89,7 @@ export default function QuestionsPage() {
         <CardHeader>
           <CardTitle>Ask a Question</CardTitle>
           <CardDescription>
-            Select a task and ask questions about the transcribed content
+            Select a task and ask questions about your tribe's knowledge base.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -113,7 +113,7 @@ export default function KnowledgePage() {
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Knowledge Base</h1>
         <p className="text-muted-foreground">
-          Generate consolidated Standard Operating Procedures from transcripts.
+          Generate consolidated Standard Operating Procedures from your tribe's knowledge base. Alternatively, check out the previous SOPs for the task.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ export default function KnowledgePage() {
         <CardHeader>
           <CardTitle>Generate SOP</CardTitle>
           <CardDescription>
-            Select a task to consolidate all transcripts into a comprehensive SOP
+            Select a task to consolidate all transcripts into a comprehensive SOP. 
           </CardDescription>
         </CardHeader>
         <CardContent>
