@@ -320,18 +320,18 @@ export default function UploadPage() {
                     type="file"
                     accept="video/mp4,video/mpeg,video/quicktime,video/x-msvideo"
                     onChange={handleFileSelect}
-                    disabled={uploading}
+                    disabled={true}
                     className="hidden"
                     id="video-upload"
                   />
                   <label
                     htmlFor="video-upload"
-                    className="flex-1 cursor-pointer"
+                    className="flex-1 cursor-not-allowed opacity-50"
                   >
-                    <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-6 hover:border-primary transition-colors">
+                    <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-6 bg-muted/50">
                       {selectedFile ? (
                         <div className="flex items-center gap-2 text-sm">
-                          <Video className="h-5 w-5 text-primary" />
+                          <Video className="h-5 w-5 text-muted-foreground" />
                           <span className="font-medium">{selectedFile.name}</span>
                           <span className="text-muted-foreground">
                             ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
@@ -341,7 +341,7 @@ export default function UploadPage() {
                         <div className="text-center">
                           <Upload className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
                           <p className="text-sm text-muted-foreground">
-                            Click to select a video file
+                            Upload feature is disabled in demo version
                           </p>
                         </div>
                       )}
@@ -382,20 +382,11 @@ export default function UploadPage() {
                     )}
                     <Button
                       onClick={handleUpload}
-                      disabled={uploading}
+                      disabled={true}
                       className="w-full"
                     >
-                      {uploading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload Video
-                        </>
-                      )}
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Disabled (Demo)
                     </Button>
                   </div>
                 )}
@@ -432,7 +423,7 @@ export default function UploadPage() {
                         <div>
                           <p className="font-medium">{video.name}</p>
                           {video.transcribed && (
-                            <p className="flex items-center text-sm text-green-600">
+                            <p className="flex items-center text-sm text-red-600 font-medium">
                               <CheckCircle2 className="mr-1 h-4 w-4" />
                               Transcribed
                             </p>
@@ -441,7 +432,7 @@ export default function UploadPage() {
                       </div>
                       <Button
                         onClick={() => handleTranscribe(video.name)}
-                        disabled={transcribing === video.name}
+                        disabled={transcribing === video.name || video.transcribed}
                         variant={video.transcribed ? 'outline' : 'default'}
                       >
                         {transcribing === video.name ? (
@@ -450,7 +441,7 @@ export default function UploadPage() {
                             Transcribing...
                           </>
                         ) : video.transcribed ? (
-                          'Re-transcribe'
+                          'Transcribed'
                         ) : (
                           'Transcribe'
                         )}

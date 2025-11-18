@@ -16,11 +16,25 @@ export async function GET(request: NextRequest) {
     const videoNames = await listVideos(taskName);
 
     // Check which videos have been transcribed
+    // Remove extension from video name for transcript check
     const videos = await Promise.all(
-      videoNames.map(async (name) => ({
-        name,
-        transcribed: await transcriptExists(taskName, name),
-      }))
+      videoNames.map(async (name) => {
+        try {
+          const nameWithoutExt = name.replace(/\.(mp4|mov|avi)$/i, '');
+          const transcribed = await transcriptExists(taskName, nameWithoutExt);
+          return {
+            name,
+            transcribed,
+          };
+        } catch (error) {
+          // If check fails, assume not transcribed
+          console.error(`Error checking transcript for ${name}:`, error);
+          return {
+            name,
+            transcribed: false,
+          };
+        }
+      })
     );
 
     return NextResponse.json({ videos });

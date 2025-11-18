@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { loadTranscripts, saveSOP } from '@/lib/storage';
+import { loadTranscripts } from '@/lib/storage';
+// import { saveSOP } from '@/lib/storage'; // Disabled in demo mode
 import { summarizeTranscripts } from '@/lib/gemini';
 
 export async function POST(request: NextRequest) {
@@ -27,11 +28,11 @@ export async function POST(request: NextRequest) {
     // Generate SOP using Gemini
     const result = await summarizeTranscripts(transcripts);
 
-    // Save SOP to file system
-    await saveSOP(taskName, {
-      markdown: result.markdown,
-      notes: result.notes,
-    });
+    // DEMO MODE: Do not save SOP to file system
+    // await saveSOP(taskName, {
+    //   markdown: result.markdown,
+    //   notes: result.notes,
+    // });
 
     return NextResponse.json({
       success: true,
