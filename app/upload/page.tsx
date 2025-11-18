@@ -420,7 +420,7 @@ export default function UploadPage() {
                         <div>
                           <p className="font-medium">{video.name}</p>
                           {video.transcribed && (
-                            <p className="flex items-center text-sm text-red-600 font-medium">
+                            <p className="flex items-center text-sm text-green-600 font-medium">
                               <CheckCircle2 className="mr-1 h-4 w-4" />
                               Transcribed
                             </p>
