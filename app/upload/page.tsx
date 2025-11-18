@@ -211,7 +211,7 @@ export default function UploadPage() {
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Upload & Transcribe</h1>
         <p className="text-muted-foreground">
-          Select a task and transcribe videos using your tribe's knowledge base. New tasks can be created by clicking the "Create Task" button.
+          Select a task and transcribe videos using your tribe's knowledge base.
         </p>
       </div>
 
@@ -228,18 +228,21 @@ export default function UploadPage() {
               onClick={() => setShowCreateTask(!showCreateTask)}
               variant="outline"
               size="sm"
+              disabled={true}
+              className="cursor-not-allowed opacity-50"
             >
               <Plus className="mr-2 h-4 w-4" />
               Create Task
+              <span className="ml-2 text-xs text-muted-foreground">(Demo Restricted)</span>
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {showCreateTask && (
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-3 opacity-50">
               <div className="space-y-2">
                 <label htmlFor="new-task-name" className="text-sm font-medium">
-                  Task Name
+                  Task Name <span className="text-xs text-muted-foreground">(Demo Restricted)</span>
                 </label>
                 <Input
                   id="new-task-name"
@@ -255,24 +258,18 @@ export default function UploadPage() {
                       setNewTaskName('');
                     }
                   }}
-                  disabled={creatingTask}
-                  autoFocus
+                  disabled={true}
+                  autoFocus={false}
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   onClick={handleCreateTask}
-                  disabled={creatingTask || !newTaskName.trim()}
+                  disabled={true}
                   size="sm"
+                  className="cursor-not-allowed"
                 >
-                  {creatingTask ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    'Create'
-                  )}
+                  Create (Demo Restricted)
                 </Button>
                 <Button
                   onClick={() => {
@@ -281,7 +278,7 @@ export default function UploadPage() {
                   }}
                   variant="outline"
                   size="sm"
-                  disabled={creatingTask}
+                  disabled={false}
                 >
                   Cancel
                 </Button>
