@@ -37,9 +37,9 @@ yarn-error.log*
 next-env.d.ts
 
 # raw files
-tasks/*.mp4
-*.mp4
-*.mov
+#tasks/*.mp4
+#*.mp4
+#*.mov
 
 # AI tool specific files
 .vscode/
