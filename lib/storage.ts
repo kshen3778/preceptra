@@ -147,17 +147,39 @@ export async function listVideos(taskName: string): Promise<string[]> {
 
 /**
  * Check if a transcript exists in local storage for a given video
+ * Checks both file system (transcribe folder) and KV store
  * @param taskName - Name of the task
- * @param videoName - Name of the video file
+ * @param videoName - Name of the video file (without extension)
  * @returns Boolean indicating if transcript exists
  */
 export async function transcriptExists(
   taskName: string,
   videoName: string
 ): Promise<boolean> {
-  const key = `tasks/${taskName}/${videoName}.json`;
-  const data = await kv.get(key);
-  return data !== null;
+  try {
+    // Check file system first (transcribe folder)
+    const transcribeDir = path.join(process.cwd(), 'tasks', taskName, 'transcribe');
+    const transcriptPath = path.join(transcribeDir, `${videoName}.txt`);
+    
+    try {
+      await fs.access(transcriptPath);
+      return true; // Exists in file system
+    } catch {
+      // File doesn't exist in file system, check KV store
+      const key = `tasks/${taskName}/${videoName}.json`;
+      const data = await kv.get(key);
+      return data !== null;
+    }
+  } catch (error) {
+    // If any error occurs (e.g., directory doesn't exist), check KV store as fallback
+    try {
+      const key = `tasks/${taskName}/${videoName}.json`;
+      const data = await kv.get(key);
+      return data !== null;
+    } catch {
+      return false;
+    }
+  }
 }
 
 /**
