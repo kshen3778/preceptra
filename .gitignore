@@ -30,14 +30,14 @@ yarn-error.log*
 .env
 
 # local kv storage
-.kv-storage/
+#.kv-storage/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # raw files
-tasks/*
+tasks/*.mp4
 *.mp4
 *.mov
 

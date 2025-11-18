@@ -1,0 +1,797 @@
+{
+  "audio_transcript": [
+    {
+      "start": 0,
+      "end": 1,
+      "speech": "Hey this"
+    },
+    {
+      "start": 1,
+      "end": 2,
+      "speech": "is Sam from"
+    },
+    {
+      "start": 2,
+      "end": 3,
+      "speech": "Family Handyman"
+    },
+    {
+      "start": 3,
+      "end": 4,
+      "speech": "and welcome"
+    },
+    {
+      "start": 4,
+      "end": 5,
+      "speech": "to under the"
+    },
+    {
+      "start": 5,
+      "end": 6,
+      "speech": "hood. Today"
+    },
+    {
+      "start": 6,
+      "end": 7,
+      "speech": " I'm going to"
+    },
+    {
+      "start": 7,
+      "end": 8,
+      "speech": " show you how"
+    },
+    {
+      "start": 8,
+      "end": 9,
+      "speech": " to change out"
+    },
+    {
+      "start": 9,
+      "end": 10,
+      "speech": " your cabin"
+    },
+    {
+      "start": 10,
+      "end": 11,
+      "speech": " air filter."
+    },
+    {
+      "start": 11,
+      "end": 12,
+      "speech": ""
+    },
+    {
+      "start": 12,
+      "end": 13,
+      "speech": ""
+    },
+    {
+      "start": 13,
+      "end": 14,
+      "speech": ""
+    },
+    {
+      "start": 14,
+      "end": 15,
+      "speech": ""
+    },
+    {
+      "start": 15,
+      "end": 16,
+      "speech": ""
+    },
+    {
+      "start": 16,
+      "end": 17,
+      "speech": ""
+    },
+    {
+      "start": 17,
+      "end": 18,
+      "speech": ""
+    },
+    {
+      "start": 18,
+      "end": 19,
+      "speech": ""
+    },
+    {
+      "start": 19,
+      "end": 20,
+      "speech": ""
+    },
+    {
+      "start": 20,
+      "end": 21,
+      "speech": ""
+    },
+    {
+      "start": 21,
+      "end": 22,
+      "speech": ""
+    },
+    {
+      "start": 22,
+      "end": 23,
+      "speech": "So the first"
+    },
+    {
+      "start": 23,
+      "end": 24,
+      "speech": " thing you want"
+    },
+    {
+      "start": 24,
+      "end": 25,
+      "speech": " to do is you"
+    },
+    {
+      "start": 25,
+      "end": 26,
+      "speech": " want to locate"
+    },
+    {
+      "start": 26,
+      "end": 27,
+      "speech": " where the cabin"
+    },
+    {
+      "start": 27,
+      "end": 28,
+      "speech": " air filter"
+    },
+    {
+      "start": 28,
+      "end": 29,
+      "speech": " is kept,"
+    },
+    {
+      "start": 29,
+      "end": 30,
+      "speech": " which is usually"
+    },
+    {
+      "start": 30,
+      "end": 31,
+      "speech": " on this"
+    },
+    {
+      "start": 31,
+      "end": 32,
+      "speech": " side of the"
+    },
+    {
+      "start": 32,
+      "end": 33,
+      "speech": " car, front"
+    },
+    {
+      "start": 33,
+      "end": 34,
+      "speech": " passenger side"
+    },
+    {
+      "start": 34,
+      "end": 35,
+      "speech": " and sometimes"
+    },
+    {
+      "start": 35,
+      "end": 36,
+      "speech": " it's underneath"
+    },
+    {
+      "start": 36,
+      "end": 37,
+      "speech": " the glove"
+    },
+    {
+      "start": 37,
+      "end": 38,
+      "speech": " box, sometimes"
+    },
+    {
+      "start": 38,
+      "end": 39,
+      "speech": " it's right"
+    },
+    {
+      "start": 39,
+      "end": 40,
+      "speech": " below it,"
+    },
+    {
+      "start": 40,
+      "end": 41,
+      "speech": " sometimes"
+    },
+    {
+      "start": 41,
+      "end": 42,
+      "speech": " it's inside"
+    },
+    {
+      "start": 42,
+      "end": 43,
+      "speech": " of it. For"
+    },
+    {
+      "start": 43,
+      "end": 44,
+      "speech": " this particular"
+    },
+    {
+      "start": 44,
+      "end": 45,
+      "speech": " car, it's"
+    },
+    {
+      "start": 45,
+      "end": 46,
+      "speech": " actually located"
+    },
+    {
+      "start": 46,
+      "end": 47,
+      "speech": " inside of the"
+    },
+    {
+      "start": 47,
+      "end": 48,
+      "speech": " glove box."
+    },
+    {
+      "start": 48,
+      "end": 49,
+      "speech": " So the first"
+    },
+    {
+      "start": 49,
+      "end": 50,
+      "speech": " thing I want to"
+    },
+    {
+      "start": 50,
+      "end": 51,
+      "speech": " do is I want to"
+    },
+    {
+      "start": 51,
+      "end": 52,
+      "speech": " remove any"
+    },
+    {
+      "start": 52,
+      "end": 53,
+      "speech": " stuff that's"
+    },
+    {
+      "start": 53,
+      "end": 54,
+      "speech": " inside the"
+    },
+    {
+      "start": 54,
+      "end": 55,
+      "speech": " glove box"
+    },
+    {
+      "start": 55,
+      "end": 56,
+      "speech": " so it's out of"
+    },
+    {
+      "start": 56,
+      "end": 57,
+      "speech": " my way."
+    },
+    {
+      "start": 57,
+      "end": 58,
+      "speech": " And I can see"
+    },
+    {
+      "start": 58,
+      "end": 59,
+      "speech": " right here"
+    },
+    {
+      "start": 59,
+      "end": 60,
+      "speech": " there's two"
+    },
+    {
+      "start": 60,
+      "end": 61,
+      "speech": " clips up"
+    },
+    {
+      "start": 61,
+      "end": 62,
+      "speech": " here. I'm going"
+    },
+    {
+      "start": 62,
+      "end": 63,
+      "speech": " to push down"
+    },
+    {
+      "start": 63,
+      "end": 64,
+      "speech": " to open up"
+    },
+    {
+      "start": 64,
+      "end": 65,
+      "speech": " where the"
+    },
+    {
+      "start": 65,
+      "end": 66,
+      "speech": " housing is"
+    },
+    {
+      "start": 66,
+      "end": 67,
+      "speech": " kept for the"
+    },
+    {
+      "start": 67,
+      "end": 68,
+      "speech": " cabin air"
+    },
+    {
+      "start": 68,
+      "end": 69,
+      "speech": " filter."
+    },
+    {
+      "start": 69,
+      "end": 70,
+      "speech": " Going to unlatch"
+    },
+    {
+      "start": 70,
+      "end": 71,
+      "speech": " that clip."
+    },
+    {
+      "start": 71,
+      "end": 72,
+      "speech": " Pull out"
+    },
+    {
+      "start": 72,
+      "end": 73,
+      "speech": " this door"
+    },
+    {
+      "start": 73,
+      "end": 74,
+      "speech": " for the housing."
+    },
+    {
+      "start": 74,
+      "end": 75,
+      "speech": " And there"
+    },
+    {
+      "start": 75,
+      "end": 76,
+      "speech": " is my air"
+    },
+    {
+      "start": 76,
+      "end": 77,
+      "speech": " filter right"
+    },
+    {
+      "start": 77,
+      "end": 78,
+      "speech": " there."
+    },
+    {
+      "start": 78,
+      "end": 79,
+      "speech": " I take this"
+    },
+    {
+      "start": 79,
+      "end": 80,
+      "speech": " out simply"
+    },
+    {
+      "start": 80,
+      "end": 81,
+      "speech": " just by pulling"
+    },
+    {
+      "start": 81,
+      "end": 82,
+      "speech": " it out."
+    },
+    {
+      "start": 82,
+      "end": 83,
+      "speech": " I'm going to"
+    },
+    {
+      "start": 83,
+      "end": 84,
+      "speech": " try to keep"
+    },
+    {
+      "start": 84,
+      "end": 85,
+      "speech": " it facing"
+    },
+    {
+      "start": 85,
+      "end": 86,
+      "speech": " up too"
+    },
+    {
+      "start": 86,
+      "end": 87,
+      "speech": " because there's"
+    },
+    {
+      "start": 87,
+      "end": 88,
+      "speech": " probably going"
+    },
+    {
+      "start": 88,
+      "end": 89,
+      "speech": " to be dirt"
+    },
+    {
+      "start": 89,
+      "end": 90,
+      "speech": " in it. I"
+    },
+    {
+      "start": 90,
+      "end": 91,
+      "speech": " don't want that"
+    },
+    {
+      "start": 91,
+      "end": 92,
+      "speech": " spilled out"
+    },
+    {
+      "start": 92,
+      "end": 93,
+      "speech": " all over the"
+    },
+    {
+      "start": 93,
+      "end": 94,
+      "speech": " vehicle."
+    },
+    {
+      "start": 94,
+      "end": 95,
+      "speech": " Yep."
+    },
+    {
+      "start": 95,
+      "end": 96,
+      "speech": " So this definitely"
+    },
+    {
+      "start": 96,
+      "end": 97,
+      "speech": " needed to"
+    },
+    {
+      "start": 97,
+      "end": 98,
+      "speech": " be replaced."
+    },
+    {
+      "start": 98,
+      "end": 99,
+      "speech": " So I can"
+    },
+    {
+      "start": 99,
+      "end": 100,
+      "speech": " just toss that."
+    },
+    {
+      "start": 100,
+      "end": 101,
+      "speech": " Okay, now"
+    },
+    {
+      "start": 101,
+      "end": 102,
+      "speech": " that the old"
+    },
+    {
+      "start": 102,
+      "end": 103,
+      "speech": " air filter"
+    },
+    {
+      "start": 103,
+      "end": 104,
+      "speech": " is removed,"
+    },
+    {
+      "start": 104,
+      "end": 105,
+      "speech": " I'm going"
+    },
+    {
+      "start": 105,
+      "end": 106,
+      "speech": " to replace"
+    },
+    {
+      "start": 106,
+      "end": 107,
+      "speech": " it with this"
+    },
+    {
+      "start": 107,
+      "end": 108,
+      "speech": " brand new"
+    },
+    {
+      "start": 108,
+      "end": 109,
+      "speech": " one."
+    },
+    {
+      "start": 109,
+      "end": 110,
+      "speech": " And I'm simply"
+    },
+    {
+      "start": 110,
+      "end": 111,
+      "speech": " going to just"
+    },
+    {
+      "start": 111,
+      "end": 112,
+      "speech": " slide it"
+    },
+    {
+      "start": 112,
+      "end": 113,
+      "speech": " into the"
+    },
+    {
+      "start": 113,
+      "end": 114,
+      "speech": " housing slot,"
+    },
+    {
+      "start": 114,
+      "end": 115,
+      "speech": " just like"
+    },
+    {
+      "start": 115,
+      "end": 116,
+      "speech": " that. I'm going"
+    },
+    {
+      "start": 116,
+      "end": 117,
+      "speech": " to push it all"
+    },
+    {
+      "start": 117,
+      "end": 118,
+      "speech": " the way back"
+    },
+    {
+      "start": 118,
+      "end": 119,
+      "speech": " so it fits"
+    },
+    {
+      "start": 119,
+      "end": 120,
+      "speech": " in."
+    },
+    {
+      "start": 120,
+      "end": 121,
+      "speech": " Put the housing"
+    },
+    {
+      "start": 121,
+      "end": 122,
+      "speech": " door back"
+    },
+    {
+      "start": 122,
+      "end": 123,
+      "speech": " on."
+    },
+    {
+      "start": 123,
+      "end": 124,
+      "speech": " Put this cover"
+    },
+    {
+      "start": 124,
+      "end": 125,
+      "speech": " back on."
+    },
+    {
+      "start": 125,
+      "end": 126,
+      "speech": ""
+    },
+    {
+      "start": 126,
+      "end": 127,
+      "speech": " All right,"
+    },
+    {
+      "start": 127,
+      "end": 128,
+      "speech": " we're good"
+    },
+    {
+      "start": 128,
+      "end": 129,
+      "speech": " to go."
+    },
+    {
+      "start": 129,
+      "end": 130,
+      "speech": " All right"
+    },
+    {
+      "start": 130,
+      "end": 131,
+      "speech": " guys, thanks"
+    },
+    {
+      "start": 131,
+      "end": 132,
+      "speech": " for watching."
+    },
+    {
+      "start": 132,
+      "end": 133,
+      "speech": " For more"
+    },
+    {
+      "start": 133,
+      "end": 134,
+      "speech": " Under the Hood"
+    },
+    {
+      "start": 134,
+      "end": 135,
+      "speech": " videos,"
+    },
+    {
+      "start": 135,
+      "end": 136,
+      "speech": " click on the"
+    },
+    {
+      "start": 136,
+      "end": 137,
+      "speech": " link in the"
+    },
+    {
+      "start": 137,
+      "end": 138,
+      "speech": " description"
+    },
+    {
+      "start": 138,
+      "end": 139,
+      "speech": " below."
+    }
+  ],
+  "visual_description": [
+    {
+      "start": 0,
+      "end": 10,
+      "visual": "A man stands next to an open car door holding a filter. Text appears identifying him as Samuel Rosenmayer, Projects Editor/Builder. A comparison shot shows a dirty filter next to a clean one with the text 'How To Change the Cabin Air Filter'."
+    },
+    {
+      "start": 10,
+      "end": 20,
+      "visual": "The man gestures towards the glove compartment. On-screen text reads 'Step 1 Locate the cabin air filter'."
+    },
+    {
+      "start": 20,
+      "end": 30,
+      "visual": "Close-up of the man reaching into the glove compartment, then opening the glove box door."
+    },
+    {
+      "start": 30,
+      "end": 40,
+      "visual": "The man removes items from the glove box. Text appears: 'Step 2 Open the air filter housing'. He pushes clips to open a cover inside the glove box."
+    },
+    {
+      "start": 40,
+      "end": 50,
+      "visual": "The man removes the housing cover, revealing the air filter compartment. He then pulls out a black piece of the housing."
+    },
+    {
+      "start": 50,
+      "end": 60,
+      "visual": "Close-up of the hand removing a piece of the housing. Text appears: 'Step 3 Remove the old air filter'. The man pulls the old, dirty air filter out of the compartment."
+    },
+    {
+      "start": 60,
+      "end": 70,
+      "visual": "The man holds up the dirty air filter for the camera. He places the filter down."
+    },
+    {
+      "start": 70,
+      "end": 80,
+      "visual": "The man places the dirty filter down. On-screen text is 'Step 4 Install the new air filter'."
+    },
+    {
+      "start": 80,
+      "end": 90,
+      "visual": "The man removes the old air filter and is about to put it away."
+    },
+    {
+      "start": 90,
+      "end": 100,
+      "visual": "The man discards the old air filter. He picks up a new, clean filter."
+    },
+    {
+      "start": 100,
+      "end": 110,
+      "visual": "The man prepares to install the new air filter into the housing slot. Text says 'Step 4 Install the new air filter'."
+    },
+    {
+      "start": 110,
+      "end": 120,
+      "visual": "Close-up of the hand sliding the new air filter into the housing slot."
+    },
+    {
+      "start": 120,
+      "end": 130,
+      "visual": "The man pushes the filter all the way in. Text appears: 'Step 5 Close the cover and the clip'. He reattaches the housing door and the inner cover."
+    },
+    {
+      "start": 130,
+      "end": 140,
+      "visual": "The man closes the glove box. He stands next to the car, gives a thumbs-up, and then walks to stand in front of the car. The video concludes with the Family Handyman logo and licensing information."
+    }
+  ],
+  "task_summaries": [
+    {
+      "time_range": "0-11s",
+      "summary": "Introduction to the video, presenter, and topic: changing a cabin air filter."
+    },
+    {
+      "time_range": "22-48s",
+      "summary": "Step 1: Locate the cabin air filter, usually behind the glove box."
+    },
+    {
+      "time_range": "48-78s",
+      "summary": "Step 2 & 3: Open the air filter housing and remove the dirty old air filter."
+    },
+    {
+      "time_range": "78-120s",
+      "summary": "Step 4: Install the new cabin air filter into the housing slot."
+    },
+    {
+      "time_range": "120-129s",
+      "summary": "Step 5: Close the air filter housing door and clip the cover back."
+    },
+    {
+      "time_range": "129-139s",
+      "summary": "Conclusion and sign-off, directing viewers to more 'Under the Hood' videos."
+    }
+  ]
+}

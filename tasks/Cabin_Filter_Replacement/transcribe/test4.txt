@@ -1,0 +1,1132 @@
+{
+  "audio_transcript": [
+    {
+      "start": 0,
+      "end": 1,
+      "speech": "Hello everyone"
+    },
+    {
+      "start": 1,
+      "end": 2,
+      "speech": "and welcome"
+    },
+    {
+      "start": 2,
+      "end": 3,
+      "speech": "in this video"
+    },
+    {
+      "start": 3,
+      "end": 4,
+      "speech": " we're going to be"
+    },
+    {
+      "start": 4,
+      "end": 5,
+      "speech": "learning how to"
+    },
+    {
+      "start": 5,
+      "end": 6,
+      "speech": "replace the"
+    },
+    {
+      "start": 6,
+      "end": 7,
+      "speech": "cabin air"
+    },
+    {
+      "start": 7,
+      "end": 8,
+      "speech": "filter in your"
+    },
+    {
+      "start": 8,
+      "end": 9,
+      "speech": "Subaru and"
+    },
+    {
+      "start": 9,
+      "end": 10,
+      "speech": "this process"
+    },
+    {
+      "start": 10,
+      "end": 11,
+      "speech": "is very"
+    },
+    {
+      "start": 11,
+      "end": 12,
+      "speech": "similar for"
+    },
+    {
+      "start": 12,
+      "end": 13,
+      "speech": "a lot of Subarus"
+    },
+    {
+      "start": 13,
+      "end": 14,
+      "speech": "so you know"
+    },
+    {
+      "start": 14,
+      "end": 15,
+      "speech": "depending"
+    },
+    {
+      "start": 15,
+      "end": 16,
+      "speech": "on your make"
+    },
+    {
+      "start": 16,
+      "end": 17,
+      "speech": "and model I'm"
+    },
+    {
+      "start": 17,
+      "end": 18,
+      "speech": "going to be doing"
+    },
+    {
+      "start": 18,
+      "end": 19,
+      "speech": "this in my"
+    },
+    {
+      "start": 19,
+      "end": 20,
+      "speech": "Subaru STI"
+    },
+    {
+      "start": 20,
+      "end": 21,
+      "speech": "but they use"
+    },
+    {
+      "start": 21,
+      "end": 22,
+      "speech": "the exact same"
+    },
+    {
+      "start": 22,
+      "end": 23,
+      "speech": "filter and quite"
+    },
+    {
+      "start": 23,
+      "end": 24,
+      "speech": "a few of their"
+    },
+    {
+      "start": 24,
+      "end": 25,
+      "speech": "models and it's a very"
+    },
+    {
+      "start": 25,
+      "end": 26,
+      "speech": "similar method"
+    },
+    {
+      "start": 26,
+      "end": 27,
+      "speech": ""
+    },
+    {
+      "start": 27,
+      "end": 28,
+      "speech": "Now I was at"
+    },
+    {
+      "start": 28,
+      "end": 29,
+      "speech": "the Subaru"
+    },
+    {
+      "start": 29,
+      "end": 30,
+      "speech": "dealership and they"
+    },
+    {
+      "start": 30,
+      "end": 31,
+      "speech": "were recommending"
+    },
+    {
+      "start": 31,
+      "end": 32,
+      "speech": "that I change"
+    },
+    {
+      "start": 32,
+      "end": 33,
+      "speech": "this filter out"
+    },
+    {
+      "start": 33,
+      "end": 34,
+      "speech": "and they were"
+    },
+    {
+      "start": 34,
+      "end": 35,
+      "speech": "quoting me a price"
+    },
+    {
+      "start": 35,
+      "end": 36,
+      "speech": "of $50 for"
+    },
+    {
+      "start": 36,
+      "end": 37,
+      "speech": "this filter"
+    },
+    {
+      "start": 37,
+      "end": 38,
+      "speech": "I bought it"
+    },
+    {
+      "start": 38,
+      "end": 39,
+      "speech": "online for"
+    },
+    {
+      "start": 39,
+      "end": 40,
+      "speech": "21 so I'll"
+    },
+    {
+      "start": 40,
+      "end": 41,
+      "speech": "provide a link"
+    },
+    {
+      "start": 41,
+      "end": 42,
+      "speech": "in the video"
+    },
+    {
+      "start": 42,
+      "end": 43,
+      "speech": "description to"
+    },
+    {
+      "start": 43,
+      "end": 44,
+      "speech": "check that out"
+    },
+    {
+      "start": 44,
+      "end": 45,
+      "speech": "but easy way to save"
+    },
+    {
+      "start": 45,
+      "end": 46,
+      "speech": "30 bucks and"
+    },
+    {
+      "start": 46,
+      "end": 47,
+      "speech": "there's no tools"
+    },
+    {
+      "start": 47,
+      "end": 48,
+      "speech": "required very"
+    },
+    {
+      "start": 48,
+      "end": 49,
+      "speech": "simple job to"
+    },
+    {
+      "start": 49,
+      "end": 50,
+      "speech": "do yourself"
+    },
+    {
+      "start": 50,
+      "end": 51,
+      "speech": ""
+    },
+    {
+      "start": 51,
+      "end": 52,
+      "speech": "Okay so"
+    },
+    {
+      "start": 52,
+      "end": 53,
+      "speech": "to change out"
+    },
+    {
+      "start": 53,
+      "end": 54,
+      "speech": "the cabin air"
+    },
+    {
+      "start": 54,
+      "end": 55,
+      "speech": "filter it's going"
+    },
+    {
+      "start": 55,
+      "end": 56,
+      "speech": "to be located"
+    },
+    {
+      "start": 56,
+      "end": 57,
+      "speech": "behind your"
+    },
+    {
+      "start": 57,
+      "end": 58,
+      "speech": "glove box so"
+    },
+    {
+      "start": 58,
+      "end": 59,
+      "speech": "the first thing"
+    },
+    {
+      "start": 59,
+      "end": 60,
+      "speech": " you're going"
+    },
+    {
+      "start": 60,
+      "end": 61,
+      "speech": "to want to do"
+    },
+    {
+      "start": 61,
+      "end": 62,
+      "speech": "is open up your"
+    },
+    {
+      "start": 62,
+      "end": 63,
+      "speech": "glove box"
+    },
+    {
+      "start": 63,
+      "end": 64,
+      "speech": "then you're going"
+    },
+    {
+      "start": 64,
+      "end": 65,
+      "speech": "to see this damper"
+    },
+    {
+      "start": 65,
+      "end": 66,
+      "speech": "here which"
+    },
+    {
+      "start": 66,
+      "end": 67,
+      "speech": "you're going"
+    },
+    {
+      "start": 67,
+      "end": 68,
+      "speech": "to want to disconnect"
+    },
+    {
+      "start": 68,
+      "end": 69,
+      "speech": "so that"
+    },
+    {
+      "start": 69,
+      "end": 70,
+      "speech": "it can fold"
+    },
+    {
+      "start": 70,
+      "end": 71,
+      "speech": "down all the"
+    },
+    {
+      "start": 71,
+      "end": 72,
+      "speech": "way once"
+    },
+    {
+      "start": 72,
+      "end": 73,
+      "speech": "the dampers"
+    },
+    {
+      "start": 73,
+      "end": 74,
+      "speech": "disconnected"
+    },
+    {
+      "start": 74,
+      "end": 75,
+      "speech": "there's two"
+    },
+    {
+      "start": 75,
+      "end": 76,
+      "speech": "stops on either"
+    },
+    {
+      "start": 76,
+      "end": 77,
+      "speech": "side so what"
+    },
+    {
+      "start": 77,
+      "end": 78,
+      "speech": "you have to do"
+    },
+    {
+      "start": 78,
+      "end": 79,
+      "speech": "is you have to"
+    },
+    {
+      "start": 79,
+      "end": 80,
+      "speech": "squeeze this"
+    },
+    {
+      "start": 80,
+      "end": 81,
+      "speech": "side to pull"
+    },
+    {
+      "start": 81,
+      "end": 82,
+      "speech": "that stop out"
+    },
+    {
+      "start": 82,
+      "end": 83,
+      "speech": "from behind so"
+    },
+    {
+      "start": 83,
+      "end": 84,
+      "speech": "that you can"
+    },
+    {
+      "start": 84,
+      "end": 85,
+      "speech": "lower down this"
+    },
+    {
+      "start": 85,
+      "end": 86,
+      "speech": "glove compartment"
+    },
+    {
+      "start": 86,
+      "end": 87,
+      "speech": "and so you may"
+    },
+    {
+      "start": 87,
+      "end": 88,
+      "speech": "need to wrestle"
+    },
+    {
+      "start": 88,
+      "end": 89,
+      "speech": "with it a little"
+    },
+    {
+      "start": 89,
+      "end": 90,
+      "speech": "bit to get"
+    },
+    {
+      "start": 90,
+      "end": 91,
+      "speech": "it but you"
+    },
+    {
+      "start": 91,
+      "end": 92,
+      "speech": "don't need any"
+    },
+    {
+      "start": 92,
+      "end": 93,
+      "speech": "tools or anything"
+    },
+    {
+      "start": 93,
+      "end": 94,
+      "speech": "like that you"
+    },
+    {
+      "start": 94,
+      "end": 95,
+      "speech": "can simply just"
+    },
+    {
+      "start": 95,
+      "end": 96,
+      "speech": "squeeze it in"
+    },
+    {
+      "start": 96,
+      "end": 97,
+      "speech": "and then pull"
+    },
+    {
+      "start": 97,
+      "end": 98,
+      "speech": "it down"
+    },
+    {
+      "start": 98,
+      "end": 99,
+      "speech": "Now you may"
+    },
+    {
+      "start": 99,
+      "end": 100,
+      "speech": "have to hold"
+    },
+    {
+      "start": 100,
+      "end": 101,
+      "speech": "one of the"
+    },
+    {
+      "start": 101,
+      "end": 102,
+      "speech": "sides to keep"
+    },
+    {
+      "start": 102,
+      "end": 103,
+      "speech": "it from popping"
+    },
+    {
+      "start": 103,
+      "end": 104,
+      "speech": "back up in"
+    },
+    {
+      "start": 104,
+      "end": 105,
+      "speech": "while you pull"
+    },
+    {
+      "start": 105,
+      "end": 106,
+      "speech": "in the other side"
+    },
+    {
+      "start": 106,
+      "end": 107,
+      "speech": "and then"
+    },
+    {
+      "start": 107,
+      "end": 108,
+      "speech": "lower it down"
+    },
+    {
+      "start": 108,
+      "end": 109,
+      "speech": ""
+    },
+    {
+      "start": 109,
+      "end": 110,
+      "speech": "Okay so"
+    },
+    {
+      "start": 110,
+      "end": 111,
+      "speech": "once you've got"
+    },
+    {
+      "start": 111,
+      "end": 112,
+      "speech": "both sides"
+    },
+    {
+      "start": 112,
+      "end": 113,
+      "speech": "disconnected"
+    },
+    {
+      "start": 113,
+      "end": 114,
+      "speech": "you can pull"
+    },
+    {
+      "start": 114,
+      "end": 115,
+      "speech": "it down and then"
+    },
+    {
+      "start": 115,
+      "end": 116,
+      "speech": "actually you can"
+    },
+    {
+      "start": 116,
+      "end": 117,
+      "speech": "pull this glove"
+    },
+    {
+      "start": 117,
+      "end": 118,
+      "speech": "compartment right"
+    },
+    {
+      "start": 118,
+      "end": 119,
+      "speech": "off there's a"
+    },
+    {
+      "start": 119,
+      "end": 120,
+      "speech": "hinge right"
+    },
+    {
+      "start": 120,
+      "end": 121,
+      "speech": "here which"
+    },
+    {
+      "start": 121,
+      "end": 122,
+      "speech": "it locks up"
+    },
+    {
+      "start": 122,
+      "end": 123,
+      "speech": "to and so"
+    },
+    {
+      "start": 123,
+      "end": 124,
+      "speech": "you can simply"
+    },
+    {
+      "start": 124,
+      "end": 125,
+      "speech": "by pulling that"
+    },
+    {
+      "start": 125,
+      "end": 126,
+      "speech": "down you can"
+    },
+    {
+      "start": 126,
+      "end": 127,
+      "speech": "pull it out"
+    },
+    {
+      "start": 127,
+      "end": 128,
+      "speech": "from that hinge"
+    },
+    {
+      "start": 128,
+      "end": 129,
+      "speech": ""
+    },
+    {
+      "start": 129,
+      "end": 130,
+      "speech": "So once"
+    },
+    {
+      "start": 130,
+      "end": 131,
+      "speech": "you've got the"
+    },
+    {
+      "start": 131,
+      "end": 132,
+      "speech": "glove box"
+    },
+    {
+      "start": 132,
+      "end": 133,
+      "speech": "off it's actually"
+    },
+    {
+      "start": 133,
+      "end": 134,
+      "speech": "a very quick"
+    },
+    {
+      "start": 134,
+      "end": 135,
+      "speech": "process you can"
+    },
+    {
+      "start": 135,
+      "end": 136,
+      "speech": "simply pull"
+    },
+    {
+      "start": 136,
+      "end": 137,
+      "speech": "out the old"
+    },
+    {
+      "start": 137,
+      "end": 138,
+      "speech": "air filter"
+    },
+    {
+      "start": 138,
+      "end": 139,
+      "speech": ""
+    },
+    {
+      "start": 139,
+      "end": 140,
+      "speech": "So we can"
+    },
+    {
+      "start": 140,
+      "end": 141,
+      "speech": "see that there"
+    },
+    {
+      "start": 141,
+      "end": 142,
+      "speech": "here's the new"
+    },
+    {
+      "start": 142,
+      "end": 143,
+      "speech": "filter"
+    },
+    {
+      "start": 143,
+      "end": 144,
+      "speech": ""
+    },
+    {
+      "start": 144,
+      "end": 145,
+      "speech": "and so as you"
+    },
+    {
+      "start": 145,
+      "end": 146,
+      "speech": "can see just"
+    },
+    {
+      "start": 146,
+      "end": 147,
+      "speech": "13,000"
+    },
+    {
+      "start": 147,
+      "end": 148,
+      "speech": "miles but a decent"
+    },
+    {
+      "start": 148,
+      "end": 149,
+      "speech": "amount of dirt"
+    },
+    {
+      "start": 149,
+      "end": 150,
+      "speech": "and dust uh"
+    },
+    {
+      "start": 150,
+      "end": 151,
+      "speech": "in this"
+    },
+    {
+      "start": 151,
+      "end": 152,
+      "speech": "old cabin"
+    },
+    {
+      "start": 152,
+      "end": 153,
+      "speech": "air filter"
+    },
+    {
+      "start": 153,
+      "end": 154,
+      "speech": "and we'll go ahead"
+    },
+    {
+      "start": 154,
+      "end": 155,
+      "speech": "and slide the"
+    },
+    {
+      "start": 155,
+      "end": 156,
+      "speech": "new one in"
+    },
+    {
+      "start": 156,
+      "end": 157,
+      "speech": ""
+    },
+    {
+      "start": 157,
+      "end": 158,
+      "speech": ""
+    },
+    {
+      "start": 158,
+      "end": 159,
+      "speech": ""
+    },
+    {
+      "start": 159,
+      "end": 160,
+      "speech": ""
+    },
+    {
+      "start": 160,
+      "end": 161,
+      "speech": ""
+    },
+    {
+      "start": 161,
+      "end": 162,
+      "speech": ""
+    },
+    {
+      "start": 162,
+      "end": 163,
+      "speech": ""
+    },
+    {
+      "start": 163,
+      "end": 164,
+      "speech": ""
+    },
+    {
+      "start": 164,
+      "end": 165,
+      "speech": ""
+    },
+    {
+      "start": 165,
+      "end": 166,
+      "speech": ""
+    },
+    {
+      "start": 166,
+      "end": 167,
+      "speech": ""
+    },
+    {
+      "start": 167,
+      "end": 168,
+      "speech": "and so we can"
+    },
+    {
+      "start": 168,
+      "end": 169,
+      "speech": "get rid of this"
+    },
+    {
+      "start": 169,
+      "end": 170,
+      "speech": "to put the"
+    },
+    {
+      "start": 170,
+      "end": 171,
+      "speech": "glove box back"
+    },
+    {
+      "start": 171,
+      "end": 172,
+      "speech": ""
+    },
+    {
+      "start": 172,
+      "end": 173,
+      "speech": "slide on"
+    },
+    {
+      "start": 173,
+      "end": 174,
+      "speech": "those two hinges"
+    },
+    {
+      "start": 174,
+      "end": 175,
+      "speech": ""
+    },
+    {
+      "start": 175,
+      "end": 176,
+      "speech": "and then"
+    },
+    {
+      "start": 176,
+      "end": 177,
+      "speech": "push it back"
+    },
+    {
+      "start": 177,
+      "end": 178,
+      "speech": "up into place"
+    },
+    {
+      "start": 178,
+      "end": 179,
+      "speech": "and then of"
+    },
+    {
+      "start": 179,
+      "end": 180,
+      "speech": "course be sure"
+    },
+    {
+      "start": 180,
+      "end": 181,
+      "speech": "to reconnect"
+    },
+    {
+      "start": 181,
+      "end": 182,
+      "speech": "that damper"
+    },
+    {
+      "start": 182,
+      "end": 183,
+      "speech": "and you're good"
+    },
+    {
+      "start": 183,
+      "end": 184,
+      "speech": "to go"
+    },
+    {
+      "start": 184,
+      "end": 185,
+      "speech": "Now as I"
+    },
+    {
+      "start": 185,
+      "end": 186,
+      "speech": "mentioned I've"
+    },
+    {
+      "start": 186,
+      "end": 187,
+      "speech": "included a link"
+    },
+    {
+      "start": 187,
+      "end": 188,
+      "speech": "in the video"
+    },
+    {
+      "start": 188,
+      "end": 189,
+      "speech": "description"
+    },
+    {
+      "start": 189,
+      "end": 190,
+      "speech": "to purchase"
+    },
+    {
+      "start": 190,
+      "end": 191,
+      "speech": "this product"
+    },
+    {
+      "start": 191,
+      "end": 192,
+      "speech": "and if you have"
+    },
+    {
+      "start": 192,
+      "end": 193,
+      "speech": "any questions"
+    },
+    {
+      "start": 193,
+      "end": 194,
+      "speech": "or comments"
+    },
+    {
+      "start": 194,
+      "end": 195,
+      "speech": "feel free"
+    },
+    {
+      "start": 195,
+      "end": 196,
+      "speech": "to leave them"
+    },
+    {
+      "start": 196,
+      "end": 197,
+      "speech": "below"
+    },
+    {
+      "start": 197,
+      "end": 198,
+      "speech": "Thanks for"
+    },
+    {
+      "start": 198,
+      "end": 199,
+      "speech": "watching"
+    },
+    {
+      "start": 199,
+      "end": 200,
+      "speech": ""
+    }
+  ],
+  "visual_description": [
+    {
+      "start": 0,
+      "end": 10,
+      "visual": "A man in a black polo shirt stands outdoors in front of a blue Subaru hatchback, holding a rectangular object wrapped in plastic and a piece of paper. He is speaking directly to the camera."
+    },
+    {
+      "start": 10,
+      "end": 20,
+      "visual": "The man continues to hold the air filter and paper, talking to the camera and gesturing slightly. The blue car remains visible behind him."
+    },
+    {
+      "start": 20,
+      "end": 30,
+      "visual": "The man is still holding the filter and paper, continuing his introduction and discussion about the cost of the cabin air filter replacement."
+    },
+    {
+      "start": 30,
+      "end": 40,
+      "visual": "The man finishes his introduction and moves to the passenger side of the blue car. He opens the glove box."
+    },
+    {
+      "start": 40,
+      "end": 50,
+      "visual": "Close-up of the hands working on the glove box. The man disconnects a damper arm and presses in the sides of the glove box to release the side stops."
+    },
+    {
+      "start": 50,
+      "end": 60,
+      "visual": "The man is shown continuing to press the sides of the glove box to lower it, eventually dropping it down completely."
+    },
+    {
+      "start": 60,
+      "end": 70,
+      "visual": "The process of disconnecting the damper and releasing the side stops of the glove box is shown again from a slightly different angle."
+    },
+    {
+      "start": 70,
+      "end": 80,
+      "visual": "A close-up of a finger pressing the side stop to allow the glove box to drop."
+    },
+    {
+      "start": 80,
+      "end": 90,
+      "visual": "The man works to release both side stops simultaneously, allowing the glove box to hang lower."
+    },
+    {
+      "start": 90,
+      "end": 100,
+      "visual": "The man continues to hold the glove box down, struggling slightly to keep one side from popping back up."
+    },
+    {
+      "start": 100,
+      "end": 110,
+      "visual": "A close-up on the damper connection point near the glove box hinge. The man disconnects the damper."
+    },
+    {
+      "start": 110,
+      "end": 120,
+      "visual": "The man pulls the glove box completely off its hinges, revealing the cabin air filter housing behind it."
+    },
+    {
+      "start": 120,
+      "end": 130,
+      "visual": "The man removes the glove box completely, then unclips and pulls out the cabin air filter tray from the filter housing."
+    },
+    {
+      "start": 130,
+      "end": 140,
+      "visual": "The man pulls the old, dirty air filter out of the tray and holds it up next to the new, clean air filter for comparison. The old filter is visibly dusty and gray."
+    },
+    {
+      "start": 140,
+      "end": 150,
+      "visual": "A close-up comparison of the old, dirty cabin air filter and the new, clean filter."
+    },
+    {
+      "start": 150,
+      "end": 160,
+      "visual": "The man inserts the new, clean cabin air filter into the housing behind the dashboard."
+    },
+    {
+      "start": 160,
+      "end": 170,
+      "visual": "The man closes the filter housing, securing the clips."
+    },
+    {
+      "start": 170,
+      "end": 180,
+      "visual": "The man reattaches the glove box to its hinges and pushes it up to clip it back into place, then reattaches the damper arm."
+    },
+    {
+      "start": 180,
+      "end": 190,
+      "visual": "The man is standing back in front of the car, holding the new filter package, concluding the video and mentioning the link in the description."
+    },
+    {
+      "start": 190,
+      "end": 200,
+      "visual": "The man concludes the video, thanking the viewer for watching. The blue Subaru is still visible behind him."
+    }
+  ],
+  "task_summaries": [
+    {
+      "time_range": "0-30s",
+      "summary": "Introduction to changing the cabin air filter on a Subaru, noting process similarity."
+    },
+    {
+      "time_range": "30-50s",
+      "summary": "Demonstrating how to open the glove box by disconnecting the damper and stops."
+    },
+    {
+      "time_range": "50-128s",
+      "summary": "Detailed instruction on removing the glove box by releasing side stops and hinges."
+    },
+    {
+      "time_range": "128-156s",
+      "summary": "Removing the old cabin air filter, comparing it to the new one, and inserting the new filter."
+    },
+    {
+      "time_range": "156-184s",
+      "summary": "Reattaching the glove box, re-clipping it into place, and reconnecting the damper arm."
+    },
+    {
+      "time_range": "184-200s",
+      "summary": "Concluding remarks, mentioning the product link, and thanking the viewers."
+    }
+  ]
+}
