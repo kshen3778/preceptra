@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,28 +60,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    // Update usage.json with login information
-    const usagePath = join(process.cwd(), 'usage.json');
-    let usageData: { logins: Array<{ username: string; timestamp: string }> };
-    
-    try {
-      const usageContent = await readFile(usagePath, 'utf-8');
-      usageData = JSON.parse(usageContent);
-    } catch (error) {
-      // If file doesn't exist or is invalid, create new structure
-      console.log('Creating new usage.json file');
-      usageData = { logins: [] };
-    }
-
-    // Add login entry
-    usageData.logins.push({
-      username,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Write back to file
-    await writeFile(usagePath, JSON.stringify(usageData, null, 2), 'utf-8');
 
     // Set authentication cookie (expires in 7 days)
     const cookieStore = await cookies();
