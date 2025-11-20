@@ -5,16 +5,19 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Upload, BookOpen, MessageSquare, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
+import { Select } from './ui/select';
+import { useTask } from '../contexts/TaskContext';
 
 const navigation = [
-  { name: 'Upload', href: '/upload', icon: Upload },
-  { name: 'Knowledge', href: '/knowledge', icon: BookOpen },
-  { name: 'Questions', href: '/questions', icon: MessageSquare },
+  { name: 'Upload', href: '/upload', icon: Upload, step: 1, description: 'Transcribe videos' },
+  { name: 'Knowledge', href: '/knowledge', icon: BookOpen, step: 2, description: 'Create procedures' },
+  { name: 'Questions', href: '/questions', icon: MessageSquare, step: 3, description: 'Ask questions' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { selectedTask, setSelectedTask, tasks } = useTask();
 
   const handleLogout = async () => {
     try {
@@ -36,26 +39,80 @@ export default function Sidebar() {
           </div>
         </Link>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <Icon className="mr-3 h-5 w-5 flex-shrink-0" aria-hidden="true" />
-              {item.name}
-            </Link>
-          );
-        })}
+      <div className="border-b px-3 py-4">
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-xs font-medium text-muted-foreground">
+            CURRENT TASK
+          </label>
+          <button
+            disabled
+            className="text-xs text-muted-foreground cursor-not-allowed opacity-60 hover:opacity-60"
+            title="Create new task (available in full version)"
+          >
+            + New
+          </button>
+        </div>
+        <Select
+          value={selectedTask}
+          onChange={(e) => setSelectedTask(e.target.value)}
+          className="w-full"
+        >
+          <option value="">Select a task...</option>
+          {tasks.map((task) => (
+            <option key={task} value={task}>
+              {task}
+            </option>
+          ))}
+        </Select>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Creating new tasks available in full version
+        </p>
+      </div>
+      <nav className="flex-1 px-3 py-4">
+        <div className="mb-3 px-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            3-Step Workflow
+          </p>
+        </div>
+        <div className="space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'group flex items-start rounded-md px-3 py-3 text-sm transition-colors',
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                )}
+              >
+                <div className={cn(
+                  'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full mr-3 text-xs font-bold',
+                  isActive
+                    ? 'bg-primary-foreground text-primary'
+                    : 'bg-muted text-muted-foreground group-hover:bg-accent-foreground group-hover:text-accent'
+                )}>
+                  {item.step}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+                    <span className="font-medium">{item.name}</span>
+                  </div>
+                  <p className={cn(
+                    "text-xs mt-0.5",
+                    isActive ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                  )}>
+                    {item.description}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
       <div className="border-t p-4">
         <Button
