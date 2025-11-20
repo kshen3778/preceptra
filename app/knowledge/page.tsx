@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Select } from '../components/ui/select';
-import { Loader2, BookOpen, History, RefreshCw } from 'lucide-react';
+import { Loader2, BookOpen, History, RefreshCw, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useTask } from '../contexts/TaskContext';
 
 interface SOP {
   markdown: string;
@@ -15,18 +17,15 @@ interface SOP {
 }
 
 export default function KnowledgePage() {
-  const [tasks, setTasks] = useState<string[]>([]);
-  const [selectedTask, setSelectedTask] = useState<string>('');
+  const { selectedTask } = useTask();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingSOPs, setLoadingSOPs] = useState(false);
   const [markdown, setMarkdown] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [previousSOPs, setPreviousSOPs] = useState<SOP[]>([]);
   const [selectedSOP, setSelectedSOP] = useState<string>('');
-
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  const [justGenerated, setJustGenerated] = useState(false);
 
   useEffect(() => {
     if (selectedTask) {
@@ -35,19 +34,8 @@ export default function KnowledgePage() {
       setPreviousSOPs([]);
       setSelectedSOP('');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTask]);
-
-  const loadTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
-      }
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    }
-  };
 
   const loadPreviousSOPs = async () => {
     if (!selectedTask) return;
@@ -82,6 +70,7 @@ export default function KnowledgePage() {
     setMarkdown('');
     setNotes('');
     setSelectedSOP('');
+    setJustGenerated(false);
 
     try {
       const response = await fetch('/api/summarize', {
@@ -94,15 +83,16 @@ export default function KnowledgePage() {
         const data = await response.json();
         setMarkdown(data.markdown || '');
         setNotes(data.notes || '');
+        setJustGenerated(true);
         // Reload previous SOPs to include the new one
         await loadPreviousSOPs();
       } else {
         const error = await response.json();
-        alert(`Failed to generate SOP: ${error.details || error.error}`);
+        alert(`Failed to generate procedure: ${error.details || error.error}`);
       }
     } catch (error) {
-      console.error('Failed to generate SOP:', error);
-      alert('Failed to generate SOP');
+      console.error('Failed to generate procedure:', error);
+      alert('Failed to generate procedure');
     } finally {
       setLoading(false);
     }
@@ -110,101 +100,140 @@ export default function KnowledgePage() {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Knowledge Base</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Knowledge Base</h1>
         <p className="text-muted-foreground">
-          Generate consolidated Standard Operating Procedures from your tribe's knowledge base. Alternatively, check out the previous SOPs for the task.
+          Create procedures from your team&apos;s videos
         </p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Generate SOP</CardTitle>
-          <CardDescription>
-            Select a task to consolidate all transcripts into a comprehensive SOP. 
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <Select
-                value={selectedTask}
-                onChange={(e) => setSelectedTask(e.target.value)}
-                className="flex-1 max-w-md"
-              >
-                <option value="">-- Select a task --</option>
-                {tasks.map((task) => (
-                  <option key={task} value={task}>
-                    {task}
-                  </option>
-                ))}
-              </Select>
-              <Button
-                onClick={handleGenerateSOP}
-                disabled={!selectedTask || loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Generate SOP
-                  </>
-                )}
-              </Button>
+      {!selectedTask ? (
+        <Card className="border-2 border-primary/20 bg-primary/5">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <BookOpen className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-xl font-semibold mb-3">Select a Task First</p>
+              <p className="text-muted-foreground mb-2">
+                Choose a task from the sidebar to view or create procedures.
+              </p>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Make sure you&apos;ve transcribed videos in Step 1 first.
+              </p>
             </div>
-
-            {selectedTask && (
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Previous SOPs
-                  </label>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {justGenerated && (
+            <Card className="mb-6 border-green-200 bg-green-50">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-900">Procedure created successfully!</p>
+                      <p className="text-sm text-green-700">Now you can ask questions about your procedures.</p>
+                    </div>
+                  </div>
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={loadPreviousSOPs}
-                    disabled={loadingSOPs}
+                    onClick={() => router.push('/questions')}
+                    className="bg-green-600 hover:bg-green-700"
                   >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${loadingSOPs ? 'animate-spin' : ''}`} />
-                    Refresh
+                    Next: Ask Questions
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
-                {loadingSOPs ? (
-                  <div className="text-sm text-muted-foreground">Loading...</div>
-                ) : previousSOPs.length > 0 ? (
-                  <Select
-                    value={selectedSOP}
-                    onChange={(e) => {
-                      const sop = previousSOPs.find(s => s.createdAt === e.target.value);
-                      if (sop) handleLoadSOP(sop);
-                    }}
-                    className="w-full"
-                  >
-                    <option value="">-- Select a previous SOP --</option>
-                    {previousSOPs.map((sop) => (
-                      <option key={sop.createdAt} value={sop.createdAt}>
-                        {new Date(sop.createdAt).toLocaleString()}
-                      </option>
-                    ))}
-                  </Select>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No previous SOPs found</div>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          )}
 
-      {markdown && (
+          <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>Create Procedure</CardTitle>
+                  <CardDescription className="mt-1">
+                    Combine all videos from {selectedTask} into a comprehensive procedure.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <Button
+                    onClick={handleGenerateSOP}
+                    disabled={loading}
+                    size="lg"
+                    className="flex-1 max-w-xs"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating (~30 sec)
+                      </>
+                    ) : (
+                      <>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Create Procedure
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <History className="h-4 w-4" />
+                      Previous Procedures
+                    </label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadPreviousSOPs}
+                      disabled={loadingSOPs}
+                    >
+                      <RefreshCw className={`h-3 w-3 mr-1 ${loadingSOPs ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                  </div>
+                  {loadingSOPs ? (
+                    <div className="text-sm text-muted-foreground">Loading...</div>
+                  ) : previousSOPs.length > 0 ? (
+                    <Select
+                      value={selectedSOP}
+                      onChange={(e) => {
+                        const sop = previousSOPs.find(s => s.createdAt === e.target.value);
+                        if (sop) {
+                          handleLoadSOP(sop);
+                          setJustGenerated(false);
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      <option value="">-- Select a previous procedure --</option>
+                      {previousSOPs.map((sop) => (
+                        <option key={sop.createdAt} value={sop.createdAt}>
+                          {new Date(sop.createdAt).toLocaleString()}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No previous procedures found</div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {markdown && selectedTask && (
         <Card>
           <CardHeader>
-            <CardTitle>Standard Operating Procedure</CardTitle>
+            <CardTitle>Procedure for {selectedTask}</CardTitle>
             {notes && (
               <div className="mt-2 p-4 rounded-lg bg-muted/50 border border-border">
                 <p className="text-sm font-medium mb-3 text-foreground">Notes:</p>
@@ -328,12 +357,12 @@ export default function KnowledgePage() {
         </Card>
       )}
 
-      {!markdown && !loading && (
+      {!markdown && !loading && selectedTask && (
         <Card>
           <CardContent className="py-12">
             <div className="text-center text-muted-foreground">
               <BookOpen className="mx-auto mb-4 h-12 w-12" />
-              <p>Select a task and click &quot;Generate SOP&quot; to create a consolidated procedure.</p>
+              <p>Click &quot;Create Procedure&quot; to generate a procedure from your videos.</p>
             </div>
           </CardContent>
         </Card>

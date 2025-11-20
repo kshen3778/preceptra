@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Select } from '../components/ui/select';
-import { Input } from '../components/ui/input';
-import { Loader2, Video, CheckCircle2, Upload, X, Plus } from 'lucide-react';
+import { Loader2, Video, CheckCircle2, Upload, ArrowRight } from 'lucide-react';
+import { useTask } from '../contexts/TaskContext';
+import { cn } from '@/lib/utils';
 
 interface Video {
   name: string;
@@ -13,23 +14,11 @@ interface Video {
 }
 
 export default function UploadPage() {
-  const [tasks, setTasks] = useState<string[]>([]);
-  const [selectedTask, setSelectedTask] = useState<string>('');
+  const { selectedTask } = useTask();
+  const router = useRouter();
   const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(false);
   const [transcribing, setTranscribing] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [showCreateTask, setShowCreateTask] = useState(false);
-  const [newTaskName, setNewTaskName] = useState('');
-  const [creatingTask, setCreatingTask] = useState(false);
-
-  // Load tasks on mount
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  const [justTranscribed, setJustTranscribed] = useState<string | null>(null);
 
   // Load videos when task changes
   useEffect(() => {
@@ -39,18 +28,6 @@ export default function UploadPage() {
       setVideos([]);
     }
   }, [selectedTask]);
-
-  const loadTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
-      }
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    }
-  };
 
   const loadVideos = async (taskName: string) => {
     try {
@@ -64,90 +41,11 @@ export default function UploadPage() {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Invalid file type. Only MP4, MPEG, MOV, and AVI files are allowed.');
-        return;
-      }
-      // Validate file size (500MB)
-      const maxSize = 500 * 1024 * 1024;
-      if (file.size > maxSize) {
-        alert('File size exceeds 500MB limit');
-        return;
-      }
-      setSelectedFile(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile || !selectedTask) return;
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('taskName', selectedTask);
-
-      const xhr = new XMLHttpRequest();
-
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percentComplete = (e.loaded / e.total) * 100;
-          setUploadProgress(percentComplete);
-        }
-      });
-
-      const uploadPromise = new Promise((resolve, reject) => {
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
-            resolve(JSON.parse(xhr.responseText));
-          } else {
-            reject(new Error(xhr.responseText));
-          }
-        });
-        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
-        xhr.open('POST', '/api/upload-video');
-        xhr.send(formData);
-      });
-
-      await uploadPromise;
-
-      // Clear selected file and reload videos
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      await loadVideos(selectedTask);
-      alert('Video uploaded successfully!');
-    } catch (error) {
-      console.error('Upload error:', error);
-      let errorMessage = 'Failed to upload video';
-      if (error instanceof Error) {
-        try {
-          const errorData = JSON.parse(error.message);
-          errorMessage = errorData.error || errorData.details || errorMessage;
-        } catch {
-          errorMessage = error.message || errorMessage;
-        }
-      }
-      alert(errorMessage);
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
   const handleTranscribe = async (videoName: string) => {
     if (!selectedTask) return;
 
     setTranscribing(videoName);
+    setJustTranscribed(null);
     try {
       const response = await fetch('/api/transcribe-video', {
         method: 'POST',
@@ -161,6 +59,7 @@ export default function UploadPage() {
       if (response.ok) {
         // Reload videos to update transcription status
         await loadVideos(selectedTask);
+        setJustTranscribed(videoName);
       } else {
         const error = await response.json();
         alert(`Transcription failed: ${error.details || error.error}`);
@@ -173,247 +72,110 @@ export default function UploadPage() {
     }
   };
 
-  const handleCreateTask = async () => {
-    if (!newTaskName.trim()) {
-      alert('Please enter a task name');
-      return;
-    }
-
-    setCreatingTask(true);
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskName: newTaskName.trim() }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Reload tasks and select the newly created task
-        await loadTasks();
-        setSelectedTask(data.taskName);
-        setNewTaskName('');
-        setShowCreateTask(false);
-      } else {
-        const error = await response.json();
-        alert(`Failed to create task: ${error.details || error.error}`);
-      }
-    } catch (error) {
-      console.error('Create task error:', error);
-      alert('Failed to create task');
-    } finally {
-      setCreatingTask(false);
-    }
-  };
-
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Upload & Transcribe</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Upload & Transcribe</h1>
         <p className="text-muted-foreground">
-          Select a task and transcribe videos using your tribe's knowledge base.
+          Transcribe videos from your team
         </p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Select Task</CardTitle>
-              <CardDescription>
-                Choose a task folder to view available videos
-              </CardDescription>
-            </div>
-            <Button
-              onClick={() => setShowCreateTask(!showCreateTask)}
-              variant="outline"
-              size="sm"
-              disabled={true}
-              className="cursor-not-allowed opacity-50"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Task
-              <span className="ml-2 text-xs text-muted-foreground">(Demo Restricted)</span>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {showCreateTask && (
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3 opacity-50">
-              <div className="space-y-2">
-                <label htmlFor="new-task-name" className="text-sm font-medium">
-                  Task Name <span className="text-xs text-muted-foreground">(Demo Restricted)</span>
-                </label>
-                <Input
-                  id="new-task-name"
-                  type="text"
-                  placeholder="Enter task name"
-                  value={newTaskName}
-                  onChange={(e) => setNewTaskName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCreateTask();
-                    } else if (e.key === 'Escape') {
-                      setShowCreateTask(false);
-                      setNewTaskName('');
-                    }
-                  }}
-                  disabled={true}
-                  autoFocus={false}
-                />
+      {!selectedTask ? (
+        <Card className="border-2 border-primary/20 bg-primary/5">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Video className="h-8 w-8 text-primary" />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCreateTask}
-                  disabled={true}
-                  size="sm"
-                  className="cursor-not-allowed"
-                >
-                  Create (Demo Restricted)
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowCreateTask(false);
-                    setNewTaskName('');
-                  }}
-                  variant="outline"
-                  size="sm"
-                  disabled={false}
-                >
-                  Cancel
-                </Button>
-              </div>
+              <p className="text-xl font-semibold mb-3">Select a Task to Get Started</p>
+              <p className="text-muted-foreground mb-2">
+                Choose a task from the sidebar to view and transcribe videos.
+              </p>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                You can also select a task from the home page.
+              </p>
             </div>
-          )}
-          <Select
-            value={selectedTask}
-            onChange={(e) => setSelectedTask(e.target.value)}
-            className="w-full max-w-md"
-          >
-            <option value="">-- Select a task --</option>
-            {tasks.map((task) => (
-              <option key={task} value={task}>
-                {task}
-              </option>
-            ))}
-          </Select>
-        </CardContent>
-      </Card>
-
-      {selectedTask && (
+          </CardContent>
+        </Card>
+      ) : (
         <>
-          <Card className="mb-6">
+          {justTranscribed && (
+            <Card className="mb-6 border-green-200 bg-green-50">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-900">Video transcribed successfully!</p>
+                      <p className="text-sm text-green-700">Ready to create a procedure from your videos.</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => router.push('/knowledge')}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Next: Create Procedure
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="mb-6 border-amber-200 bg-amber-50">
             <CardHeader>
-              <CardTitle>Upload Video</CardTitle>
-              <CardDescription>
-                Upload a video file to transcribe (MP4, MOV, AVI - Max 500MB)
+              <CardTitle className="text-amber-900">Upload Video (Demo Limited)</CardTitle>
+              <CardDescription className="text-amber-700">
+                Video upload is available in the full version. This demo uses pre-loaded sample videos.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="video/mp4,video/mpeg,video/quicktime,video/x-msvideo"
-                    onChange={handleFileSelect}
-                    disabled={true}
-                    className="hidden"
-                    id="video-upload"
-                  />
-                  <label
-                    htmlFor="video-upload"
-                    className="flex-1 cursor-not-allowed opacity-50"
-                  >
-                    <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border p-6 bg-muted/50">
-                      {selectedFile ? (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Video className="h-5 w-5 text-muted-foreground" />
-                          <span className="font-medium">{selectedFile.name}</span>
-                          <span className="text-muted-foreground">
-                            ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <Upload className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            Upload feature is disabled in demo version
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                  {selectedFile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setSelectedFile(null);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
-                        }
-                      }}
-                      disabled={uploading}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {selectedFile && (
-                  <div className="space-y-2">
-                    {uploading && (
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Uploading...</span>
-                          <span className="text-muted-foreground">{Math.round(uploadProgress)}%</span>
-                        </div>
-                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <Button
-                      onClick={handleUpload}
-                      disabled={true}
-                      className="w-full"
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Disabled (Demo)
-                    </Button>
-                  </div>
-                )}
+              <div className="rounded-lg border-2 border-dashed border-amber-300 bg-white p-8 text-center">
+                <Upload className="mx-auto mb-3 h-10 w-10 text-amber-600" />
+                <p className="font-medium text-amber-900 mb-1">Upload Feature</p>
+                <p className="text-sm text-amber-700">
+                  Available in full version - supports MP4, MOV, AVI (up to 500MB)
+                </p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Videos in {selectedTask}</CardTitle>
-              <CardDescription>
-                {videos.length === 0
-                  ? 'No videos found in this task folder'
-                  : `${videos.length} video(s) found`}
-              </CardDescription>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>Videos in {selectedTask}</CardTitle>
+                  <CardDescription>
+                    {videos.length === 0
+                      ? 'No videos found in this task'
+                      : `${videos.length} video(s) found - Click "Transcribe" on any video below`}
+                  </CardDescription>
+                </div>
+                {videos.some(v => !v.transcribed) && (
+                  <div className="flex items-center gap-2 text-sm text-primary font-medium px-3 py-1 bg-primary/10 rounded-full">
+                    Action needed
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {videos.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-8 text-center">
                   <Video className="mx-auto mb-2 h-12 w-12 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Upload a video file above to get started
+                    No videos found for this task
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {videos.map((video) => (
+                  {videos.map((video, index) => (
                     <div
                       key={video.name}
-                      className="flex items-center justify-between rounded-lg border p-4"
+                      className={cn(
+                        "flex items-center justify-between rounded-lg border p-4 transition-all",
+                        !video.transcribed && index === 0 && "border-2 border-primary bg-primary/5"
+                      )}
                     >
                       <div className="flex items-center space-x-3">
                         <Video className="h-5 w-5 text-muted-foreground" />
@@ -431,11 +193,12 @@ export default function UploadPage() {
                         onClick={() => handleTranscribe(video.name)}
                         disabled={transcribing === video.name || video.transcribed}
                         variant={video.transcribed ? 'outline' : 'default'}
+                        size={!video.transcribed && index === 0 ? 'lg' : 'default'}
                       >
                         {transcribing === video.name ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Transcribing...
+                            Transcribing (~2 min)
                           </>
                         ) : video.transcribed ? (
                           'Transcribed'

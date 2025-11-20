@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Select } from '../components/ui/select';
 import { Input } from '../components/ui/input';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
+import { useTask } from '../contexts/TaskContext';
 
 interface QuestionAnswer {
   question: string;
@@ -15,27 +15,10 @@ interface QuestionAnswer {
 }
 
 export default function QuestionsPage() {
-  const [tasks, setTasks] = useState<string[]>([]);
-  const [selectedTask, setSelectedTask] = useState<string>('');
+  const { selectedTask } = useTask();
   const [question, setQuestion] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<QuestionAnswer[]>([]);
-
-  useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
-    try {
-      const response = await fetch('/api/tasks');
-      if (response.ok) {
-        const data = await response.json();
-        setTasks(data.tasks || []);
-      }
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    }
-  };
 
   const handleAskQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,66 +61,73 @@ export default function QuestionsPage() {
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Ask Questions</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Ask Questions</h1>
         <p className="text-muted-foreground">
-          Get answers from your tribe's knowledge base.
+          Get answers from your team&apos;s videos and procedures
         </p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Ask a Question</CardTitle>
-          <CardDescription>
-            Select a task and ask questions about your tribe's knowledge base.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAskQuestion} className="space-y-4">
-            <Select
-              value={selectedTask}
-              onChange={(e) => setSelectedTask(e.target.value)}
-              className="w-full max-w-md"
-            >
-              <option value="">-- Select a task --</option>
-              {tasks.map((task) => (
-                <option key={task} value={task}>
-                  {task}
-                </option>
-              ))}
-            </Select>
-
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Type your question here..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                disabled={!selectedTask || loading}
-                className="flex-1"
-              />
-              <Button
-                type="submit"
-                disabled={!selectedTask || !question.trim() || loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Thinking...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    Ask
-                  </>
-                )}
-              </Button>
+      {!selectedTask ? (
+        <Card className="border-2 border-primary/20 bg-primary/5">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <MessageSquare className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-xl font-semibold mb-3">Select a Task First</p>
+              <p className="text-muted-foreground mb-2">
+                Choose a task from the sidebar to ask questions.
+              </p>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Make sure you&apos;ve completed Steps 1 & 2 first.
+              </p>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle>Ask About {selectedTask}</CardTitle>
+              <CardDescription>
+                Get answers based on all videos and procedures for this task.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAskQuestion} className="flex gap-2">
+                <Input
+                  type="text"
+                  placeholder="Example: How do I troubleshoot X? What are the safety steps?"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  disabled={loading}
+                  className="flex-1"
+                />
+                <Button
+                  type="submit"
+                  disabled={!question.trim() || loading}
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Thinking...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Ask
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
-      {history.length > 0 ? (
+      {history.length > 0 && selectedTask && (
         <div className="space-y-6">
           {history.map((qa, index) => (
             <Card key={index} className="overflow-hidden">
@@ -238,15 +228,6 @@ export default function QuestionsPage() {
             </Card>
           ))}
         </div>
-      ) : (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">
-              <MessageSquare className="mx-auto mb-4 h-12 w-12" />
-              <p>Select a task and ask a question to get started.</p>
-            </div>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
