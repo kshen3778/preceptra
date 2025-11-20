@@ -10,7 +10,7 @@ import { useTask } from '../contexts/TaskContext';
 
 const navigation = [
   { name: 'Upload', href: '/upload', icon: Upload, step: 1, description: 'Transcribe videos' },
-  { name: 'Knowledge', href: '/knowledge', icon: BookOpen, step: 2, description: 'Create procedures' },
+  { name: 'Procedure', href: '/procedure', icon: BookOpen, step: 2, description: 'Create/update SOP' },
   { name: 'Questions', href: '/questions', icon: MessageSquare, step: 3, description: 'Ask questions' },
 ];
 
@@ -44,13 +44,6 @@ export default function Sidebar() {
           <label className="block text-xs font-medium text-muted-foreground">
             CURRENT TASK
           </label>
-          <button
-            disabled
-            className="text-xs text-muted-foreground cursor-not-allowed opacity-60 hover:opacity-60"
-            title="Create new task (available in full version)"
-          >
-            + New
-          </button>
         </div>
         <Select
           value={selectedTask}
@@ -64,9 +57,17 @@ export default function Sidebar() {
             </option>
           ))}
         </Select>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Creating new tasks available in full version
-        </p>
+        <div className="mt-2 text-xs">
+          <span className="text-muted-foreground">Want custom tasks? </span>
+          <a
+            href="https://trymlink.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            Contact us
+          </a>
+        </div>
       </div>
       <nav className="flex-1 px-3 py-4">
         <div className="mb-3 px-3">
