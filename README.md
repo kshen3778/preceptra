@@ -138,7 +138,7 @@ export async function answerQuestion(..., topK: number = 5)
 All pages are in `/app/`:
 - Home: `app/page.tsx`
 - Upload: `app/upload/page.tsx`
-- Knowledge: `app/knowledge/page.tsx`
+- Procedure: `app/procedure/page.tsx`
 - Questions: `app/questions/page.tsx`
 
 ## Commands

@@ -183,7 +183,7 @@ Restart the dev server after changes.
 All pages are in `/app/`:
 - Home page: `app/page.tsx`
 - Upload page: `app/upload/page.tsx`
-- Knowledge page: `app/knowledge/page.tsx`
+- Procedure page: `app/procedure/page.tsx`
 - Questions page: `app/questions/page.tsx`
 
 Changes are hot-reloaded automatically!
