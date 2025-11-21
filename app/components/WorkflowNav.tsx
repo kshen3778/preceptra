@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 const steps = [
   { name: 'Upload', path: '/upload', number: 1 },
-  { name: 'Knowledge', path: '/knowledge', number: 2 },
+  { name: 'Procedure', path: '/procedure', number: 2 },
   { name: 'Questions', path: '/questions', number: 3 },
 ];
 

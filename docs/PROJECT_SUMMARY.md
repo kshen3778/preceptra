@@ -26,7 +26,7 @@ A production-ready Next.js 14 application that transforms expert video demonstra
 │  Pages:                  API Routes:                    │
 │  ├── / (Home)           ├── /api/transcribe-video      │
 │  ├── /upload            ├── /api/summarize             │
-│  ├── /knowledge         ├── /api/rag                   │
+│  ├── /procedure         ├── /api/rag                   │
 │  └── /questions         ├── /api/tasks                 │
 │                         └── /api/videos                │
 │                                                         │

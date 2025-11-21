@@ -12,6 +12,7 @@ Instructions:
 6. Include decision rules, branching logic, or safety/quality checks visible in the transcripts.
 7. Format the SOP as clear, well-structured Markdown with headings, lists, and step-by-step instructions.
 8. Include any important notes or observations in a separate notes field.
+9. IMPORTANT: For each major step or instruction, cite the source video and approximate timestamp where that information came from. Include these citations inline in the markdown using the format: `(Source: [videoName] at ~[timestamp]s)`
 
 Input:
 You will receive a JSON array of transcript objects. Each transcript contains:
@@ -24,8 +25,14 @@ Output Format:
 You MUST return a valid JSON object with this EXACT structure (no other fields, no extra text):
 
 {
-  "markdown": "# SOP Title\n\n## Overview\n[Overview text]\n\n## Steps\n\n### Step 1: [Step name]\n[Step description]\n\n### Step 2: [Step name]\n[Step description]\n\n...",
+  "markdown": "# SOP Title\n\n## Overview\n[Overview text]\n\n## Steps\n\n### Step 1: [Step name]\n[Step description] (Source: video1.mp4 at ~15s)\n\n### Step 2: [Step name]\n[Step description] (Source: video2.mp4 at ~42s)\n\n...",
   "notes": "Any important observations, variations between operators, or tribal knowledge notes"
+}
+
+Example with citations:
+{
+  "markdown": "# Opening the Cash Register\n\n## Overview\nThis procedure covers the standard process for opening and preparing the cash register at the start of a shift.\n\n## Steps\n\n### Step 1: Verify Cash Drawer\nCount the starting cash to ensure it matches the expected amount. (Source: training_video_1.mp4 at ~45s)\n\n### Step 2: Log Into System\nEnter your employee ID and password into the POS terminal. (Source: training_video_2.mp4 at ~12s)\n\n### Step 3: Check Receipt Paper\nVerify that the receipt printer has adequate paper for the shift. (Source: training_video_1.mp4 at ~78s)",
+  "notes": "Most operators check the receipt paper before logging in, even though the formal SOP says to do it after. Two operators mentioned always keeping extra receipt rolls under the counter."
 }
 
 Requirements:

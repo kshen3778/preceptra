@@ -56,53 +56,28 @@ export default function Home() {
             </Select>
           </div>
 
-          {showCreateTask && (
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-              <div className="space-y-2">
-                <label htmlFor="new-task-name" className="text-sm font-medium">
-                  New Task Name <span className="text-xs text-muted-foreground">(Demo: Not available)</span>
-                </label>
-                <Input
-                  id="new-task-name"
-                  type="text"
-                  placeholder="e.g., Bearing Assembly, Quality Check, etc."
-                  value={newTaskName}
-                  onChange={(e) => setNewTaskName(e.target.value)}
-                  disabled={true}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  disabled={true}
-                  size="sm"
-                  className="cursor-not-allowed"
-                >
-                  Create (Demo Restricted)
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowCreateTask(false);
-                    setNewTaskName('');
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  Cancel
-                </Button>
-              </div>
+          <div className="pt-4 border-t">
+            <p className="text-sm text-gray-600 mb-3">
+              Need to create your own custom tasks?
+            </p>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://trymlink.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Visit trymlink.com
+              </a>
+              <span className="text-gray-400">or</span>
+              <a
+                href="mailto:info@trymlink.com?subject=Unlock Custom Tasks&body=I'm interested in creating custom tasks and uploading my own videos to Preceptra."
+                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Email us
+              </a>
             </div>
-          )}
-
-          {!showCreateTask && (
-            <Button
-              onClick={() => setShowCreateTask(true)}
-              variant="outline"
-              className="w-full"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Task
-            </Button>
-          )}
+          </div>
 
           <Button
             onClick={handleGetStarted}
@@ -141,10 +116,10 @@ export default function Home() {
               </div>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Generate Procedures
+                Create Procedures
               </CardTitle>
               <CardDescription>
-                Consolidate multiple transcripts into comprehensive procedures.
+                Consolidate multiple transcripts into comprehensive step-by-step procedures.
               </CardDescription>
             </CardHeader>
           </Card>

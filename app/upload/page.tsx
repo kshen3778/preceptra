@@ -112,7 +112,7 @@ export default function UploadPage() {
                     </div>
                   </div>
                   <Button
-                    onClick={() => router.push('/knowledge')}
+                    onClick={() => router.push('/procedure')}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     Next: Create Procedure
@@ -123,20 +123,56 @@ export default function UploadPage() {
             </Card>
           )}
 
-          <Card className="mb-6 border-amber-200 bg-amber-50">
+          <Card className="mb-6 border-blue-200 bg-blue-50">
             <CardHeader>
-              <CardTitle className="text-amber-900">Upload Video (Demo Limited)</CardTitle>
-              <CardDescription className="text-amber-700">
-                Video upload is available in the full version. This demo uses pre-loaded sample videos.
-              </CardDescription>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-blue-900 flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Upload Your Own Videos
+                  </CardTitle>
+                  <CardDescription className="text-blue-700 mt-2">
+                    The free version includes pre-loaded sample videos so you can try the full workflow.
+                    Want to upload your own team&apos;s videos?
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border-2 border-dashed border-amber-300 bg-white p-8 text-center">
-                <Upload className="mx-auto mb-3 h-10 w-10 text-amber-600" />
-                <p className="font-medium text-amber-900 mb-1">Upload Feature</p>
-                <p className="text-sm text-amber-700">
-                  Available in full version - supports MP4, MOV, AVI (up to 500MB)
-                </p>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-blue-200 bg-white p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                        <Upload className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-2">Unlock Custom Video Uploads</h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Upload unlimited videos in MP4, MOV, or AVI format (up to 500MB each).
+                        Perfect for capturing your team&apos;s unique workflows and expertise.
+                      </p>
+                      <div className="flex gap-3">
+                        <a
+                          href="https://trymlink.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          Visit trymlink.com
+                        </a>
+                        <span className="text-gray-400">or</span>
+                        <a
+                          href="mailto:info@trymlink.com?subject=Unlock Video Uploads&body=I'm interested in uploading my own videos to Preceptra."
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          Email us
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
