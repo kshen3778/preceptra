@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/input';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
-import WorkflowNavBottom from '../components/WorkflowNavBottom';
 
 interface QuestionAnswer {
   question: string;
@@ -336,7 +335,9 @@ export default function QuestionsPage() {
           ))}
         </div>
       )}
-      <WorkflowNavBottom />
+
+      {/* Bottom spacing */}
+      <div className="mb-32"></div>
     </div>
   );
 }
