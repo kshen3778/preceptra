@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, BookOpen, ArrowRight, CheckCircle2, Video } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
+import WorkflowNavBottom from '../components/WorkflowNavBottom';
 
 interface SOP {
   markdown: string;
@@ -363,6 +364,7 @@ export default function KnowledgePage() {
           </CardContent>
         </Card>
       )}
+      <WorkflowNavBottom />
     </div>
   );
 }

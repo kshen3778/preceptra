@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Loader2, Video, CheckCircle2, Upload, ArrowRight } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 import { cn } from '@/lib/utils';
+import WorkflowNavBottom from '../components/WorkflowNavBottom';
 
 interface Video {
   name: string;
@@ -250,6 +251,7 @@ export default function UploadPage() {
           </Card>
         </>
       )}
+      <WorkflowNavBottom />
     </div>
   );
 }

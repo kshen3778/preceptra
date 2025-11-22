@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
-import WorkflowNav from './WorkflowNav';
 import { TaskProvider } from '../contexts/TaskContext';
 
 export default function LayoutWrapper({
@@ -12,7 +11,6 @@ export default function LayoutWrapper({
 }) {
   const pathname = usePathname();
   const isLoginPage = pathname === '/login';
-  const isWorkflowPage = ['/upload', '/procedure', '/questions'].includes(pathname);
 
   return (
     <TaskProvider>
@@ -45,7 +43,6 @@ export default function LayoutWrapper({
               </div>
             </div>
           )}
-          {isWorkflowPage && <WorkflowNav />}
           {children}
         </main>
       </div>
