@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Loader2, Video, CheckCircle2, Upload, ArrowRight } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 import { cn } from '@/lib/utils';
-import WorkflowNavBottom from '../components/WorkflowNavBottom';
 
 interface Video {
   name: string;
@@ -251,7 +250,18 @@ export default function UploadPage() {
           </Card>
         </>
       )}
-      <WorkflowNavBottom />
+
+      {/* Bottom spacing and Next button */}
+      <div className="mt-8 mb-32 flex justify-end">
+        <Button
+          onClick={() => router.push('/procedure')}
+          variant="default"
+          size="lg"
+        >
+          Next: Create Procedure
+          <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+      </div>
     </div>
   );
 }
