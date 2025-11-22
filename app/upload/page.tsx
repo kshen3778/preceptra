@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Loader2, Video, CheckCircle2, Upload, ArrowRight } from 'lucide-react';
+import { Loader2, Video, CheckCircle2, Upload, ArrowRight, Lock } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 import { cn } from '@/lib/utils';
 
@@ -100,38 +100,45 @@ export default function UploadPage() {
         </Card>
       ) : (
         <>
-          {justTranscribed && (
-            <Card className="mb-6 border-green-200 bg-green-50">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="font-medium text-green-900">Video transcribed successfully!</p>
-                      <p className="text-sm text-green-700">Ready to create a procedure from your videos.</p>
-                    </div>
+          {/* Demo Mode Banner */}
+          <Card className="mb-6 border-2 border-green-500 bg-gradient-to-r from-green-50 to-green-100">
+            <CardContent className="py-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white">
+                    <CheckCircle2 className="h-6 w-6" />
                   </div>
-                  <Button
-                    onClick={() => router.push('/procedure')}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Next: Create Procedure
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="mb-6 border-blue-200 bg-blue-50">
-            <CardHeader>
-              <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-blue-900 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-green-900 mb-2">Demo Ready: Sample Data Pre-Loaded</h3>
+                  <p className="text-green-800 mb-3">
+                    This demonstration includes pre-transcribed sample videos so you can immediately explore the full workflow without uploading or transcribing.
+                  </p>
+                  <p className="text-sm text-green-700 font-medium">
+                    👉 Click "Next: Create Procedure" below to continue and see how procedures are generated
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-6 border-2 border-orange-300 bg-orange-50/50 relative overflow-hidden">
+            <div className="absolute top-4 right-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500">
+                <Lock className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <CardHeader>
+              <div className="flex items-start justify-between pr-16">
+                <div className="flex-1">
+                  <CardTitle className="text-orange-900 flex items-center gap-2">
                     <Upload className="h-5 w-5" />
                     Upload Your Own Videos
+                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-orange-200 text-orange-800 rounded-full">
+                      LOCKED
+                    </span>
                   </CardTitle>
-                  <CardDescription className="text-blue-700 mt-2">
+                  <CardDescription className="text-orange-800 mt-2">
                     The free version includes pre-loaded sample videos so you can try the full workflow.
                     Want to upload your own team&apos;s videos?
                   </CardDescription>
@@ -140,8 +147,15 @@ export default function UploadPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="rounded-lg border border-blue-200 bg-white p-6">
-                  <div className="flex items-start gap-4">
+                <div className="rounded-lg border-2 border-orange-300 bg-white p-6 relative">
+                  <div className="absolute inset-0 bg-gray-50/60 backdrop-blur-[1px] rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <Lock className="h-12 w-12 text-orange-500 mx-auto mb-3" />
+                      <p className="font-bold text-orange-900 text-lg mb-1">Feature Locked</p>
+                      <p className="text-sm text-orange-700">Contact us to unlock video uploads</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 opacity-40">
                     <div className="flex-shrink-0">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
                         <Upload className="h-6 w-6 text-blue-600" />
@@ -153,115 +167,118 @@ export default function UploadPage() {
                         Upload unlimited videos in MP4, MOV, or AVI format (up to 500MB each).
                         Perfect for capturing your team&apos;s unique workflows and expertise.
                       </p>
-                      <div className="flex gap-3">
-                        <a
-                          href="https://trymlink.com"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          Visit trymlink.com
-                        </a>
-                        <span className="text-gray-400">or</span>
-                        <a
-                          href="mailto:info@trymlink.com?subject=Unlock Video Uploads&body=I'm interested in uploading my own videos to Preceptra."
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          Email us
-                        </a>
-                      </div>
                     </div>
                   </div>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <a
+                    href="https://trymlink.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-orange-700 hover:text-orange-900 hover:underline"
+                  >
+                    Visit trymlink.com
+                  </a>
+                  <span className="text-gray-400">or</span>
+                  <a
+                    href="mailto:info@trymlink.com?subject=Unlock Video Uploads&body=I'm interested in uploading my own videos to Preceptra."
+                    className="text-sm font-medium text-orange-700 hover:text-orange-900 hover:underline"
+                  >
+                    Email us to unlock
+                  </a>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="mb-6 border-2 border-orange-300 bg-orange-50/50 relative overflow-hidden">
+            <div className="absolute top-4 right-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500">
+                <Lock className="h-5 w-5 text-white" />
+              </div>
+            </div>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle>Videos in {selectedTask}</CardTitle>
-                  <CardDescription>
-                    {videos.length === 0
-                      ? 'No videos found in this task'
-                      : `${videos.length} video(s) found - Click "Transcribe" on any video below`}
+              <div className="flex items-start justify-between pr-16">
+                <div className="flex-1">
+                  <CardTitle className="text-orange-900 flex items-center gap-2">
+                    <Video className="h-5 w-5" />
+                    Transcribe Videos
+                    <span className="ml-2 px-2 py-0.5 text-xs font-semibold bg-orange-200 text-orange-800 rounded-full">
+                      LOCKED
+                    </span>
+                  </CardTitle>
+                  <CardDescription className="text-orange-800 mt-2">
+                    Transcription feature is locked in the free version. Sample data is already available for the demo.
                   </CardDescription>
                 </div>
-                {videos.some(v => !v.transcribed) && (
-                  <div className="flex items-center gap-2 text-sm text-primary font-medium px-3 py-1 bg-primary/10 rounded-full">
-                    Action needed
-                  </div>
-                )}
               </div>
             </CardHeader>
             <CardContent>
-              {videos.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-8 text-center">
-                  <Video className="mx-auto mb-2 h-12 w-12 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    No videos found for this task
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {videos.map((video, index) => (
-                    <div
-                      key={video.name}
-                      className={cn(
-                        "flex items-center justify-between rounded-lg border p-4 transition-all",
-                        !video.transcribed && index === 0 && "border-2 border-primary bg-primary/5"
-                      )}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Video className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{video.name}</p>
-                          {video.transcribed && (
-                            <p className="flex items-center text-sm text-green-600 font-medium">
-                              <CheckCircle2 className="mr-1 h-4 w-4" />
-                              Transcribed
-                            </p>
-                          )}
+              <div className="space-y-4">
+                <div className="rounded-lg border-2 border-orange-300 bg-white p-6 relative min-h-[200px]">
+                  <div className="absolute inset-0 bg-gray-50/60 backdrop-blur-[1px] rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <Lock className="h-12 w-12 text-orange-500 mx-auto mb-3" />
+                      <p className="font-bold text-orange-900 text-lg mb-1">Feature Locked</p>
+                      <p className="text-sm text-orange-700 mb-2">Sample transcriptions included for demo</p>
+                      <p className="text-xs text-orange-600">Contact us to unlock video transcription</p>
+                    </div>
+                  </div>
+                  <div className="opacity-40">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between rounded-lg border p-4 bg-gray-50">
+                        <div className="flex items-center space-x-3">
+                          <Video className="h-5 w-5 text-gray-400" />
+                          <div>
+                            <p className="font-medium text-gray-600">Sample Video 1</p>
+                            <p className="text-sm text-gray-500">Ready to transcribe</p>
+                          </div>
+                        </div>
+                        <div className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium">
+                          Transcribe
                         </div>
                       </div>
-                      <Button
-                        onClick={() => handleTranscribe(video.name)}
-                        disabled={transcribing === video.name || video.transcribed}
-                        variant={video.transcribed ? 'outline' : 'default'}
-                        size={!video.transcribed && index === 0 ? 'lg' : 'default'}
-                      >
-                        {transcribing === video.name ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Transcribing (~2 min)
-                          </>
-                        ) : video.transcribed ? (
-                          'Transcribed'
-                        ) : (
-                          'Transcribe'
-                        )}
-                      </Button>
+                      <div className="flex items-center justify-between rounded-lg border p-4 bg-gray-50">
+                        <div className="flex items-center space-x-3">
+                          <Video className="h-5 w-5 text-gray-400" />
+                          <div>
+                            <p className="font-medium text-gray-600">Sample Video 2</p>
+                            <p className="text-sm text-gray-500">Ready to transcribe</p>
+                          </div>
+                        </div>
+                        <div className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium">
+                          Transcribe
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </>
       )}
 
       {/* Bottom spacing and Next button */}
-      <div className="mt-8 mb-32 flex justify-end">
-        <Button
-          onClick={() => router.push('/procedure')}
-          variant="default"
-          size="lg"
-        >
-          Next: Create Procedure
-          <ArrowRight className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
+      {selectedTask && (
+        <div className="mt-8 mb-32">
+          <div className="flex items-center justify-between p-6 rounded-lg border-2 border-primary bg-primary/5">
+            <div>
+              <h3 className="font-semibold text-lg mb-1">Ready to Continue?</h3>
+              <p className="text-sm text-muted-foreground">The sample videos are already transcribed. Proceed to create a procedure.</p>
+            </div>
+            <Button
+              onClick={() => router.push('/procedure')}
+              variant="default"
+              size="lg"
+              className="px-8"
+            >
+              Next: Create Procedure
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
