@@ -33,7 +33,9 @@ export default function QuestionsPage() {
   }[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isInitializingCamera, setIsInitializingCamera] = useState(false);
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
@@ -140,19 +142,29 @@ To resolve this, you would need to re-access the filter housing, remove the filt
     setUploadedMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const startRecording = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
+  const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
+    setIsInitializingCamera(true);
+    setIsCameraOpen(true); // Set this early so video element renders
+
+    // Wait for next frame to ensure video element is in DOM
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
     try {
       // Check if we're on HTTPS or localhost
       const isSecureContext = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost';
 
       if (!isSecureContext) {
         alert('Camera access requires HTTPS. Please access this site using https:// instead of http://');
+        setIsInitializingCamera(false);
+        setIsCameraOpen(false);
         return;
       }
 
       // Check if navigator.mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         alert('Camera access is not supported in this browser. Please use a modern browser like Chrome, Safari, or Firefox.');
+        setIsInitializingCamera(false);
+        setIsCameraOpen(false);
         return;
       }
 
@@ -170,28 +182,138 @@ To resolve this, you would need to re-access the filter housing, remove the filt
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('Camera stream obtained successfully');
 
+      const videoTracks = stream.getVideoTracks();
+      console.log('Video tracks:', videoTracks.map(t => ({
+        label: t.label,
+        enabled: t.enabled,
+        readyState: t.readyState,
+        settings: t.getSettings()
+      })));
+
+      if (videoTracks.length === 0) {
+        alert('No video track found in camera stream');
+        stream.getTracks().forEach(track => track.stop());
+        setIsInitializingCamera(false);
+        setIsCameraOpen(false);
+        return;
+      }
+
       setCameraFacing(facingMode);
       setRecordingStream(stream);
-      recordedChunksRef.current = [];
 
-      // Show preview with proper setup
-      if (videoPreviewRef.current) {
-        videoPreviewRef.current.srcObject = stream;
-        // Wait for metadata to load before playing
-        videoPreviewRef.current.onloadedmetadata = () => {
-          if (videoPreviewRef.current) {
-            videoPreviewRef.current.play().catch(err => {
-              console.error('Error playing video preview:', err);
-            });
-          }
-        };
+      // Show preview with proper setup and wait for it to load
+      if (!videoPreviewRef.current) {
+        console.error('Video preview element not ready after waiting');
+        alert('Video preview element not ready. Please try again.');
+        stream.getTracks().forEach(track => track.stop());
+        setIsInitializingCamera(false);
+        setIsCameraOpen(false);
+        return;
       }
+
+      const video = videoPreviewRef.current;
+
+      // Set up video element
+      video.srcObject = stream;
+      video.muted = true;
+      video.playsInline = true;
+
+      console.log('Video element setup complete, waiting for metadata...');
+
+      // Wait for the video to be ready
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const onLoadedMetadata = () => {
+            console.log('Video metadata loaded, dimensions:', video.videoWidth, 'x', video.videoHeight);
+            video.play()
+              .then(() => {
+                console.log('Video preview playing successfully');
+                // Wait a bit for the stream to stabilize
+                setTimeout(() => resolve(), 300);
+              })
+              .catch(err => {
+                console.error('Error playing video preview:', err);
+                reject(err);
+              });
+          };
+
+          const onError = (err: Event) => {
+            console.error('Video element error:', err);
+            reject(new Error('Video loading failed'));
+          };
+
+          video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+          video.addEventListener('error', onError, { once: true });
+
+          // Timeout after 10 seconds
+          const timeout = setTimeout(() => {
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            video.removeEventListener('error', onError);
+            reject(new Error('Video loading timeout - metadata never loaded'));
+          }, 10000);
+
+          // Also resolve early if video is already playing
+          if (video.readyState >= 2) {
+            clearTimeout(timeout);
+            onLoadedMetadata();
+          }
+        });
+      } catch (error) {
+        console.error('Failed to initialize video preview:', error);
+        stream.getTracks().forEach(track => track.stop());
+        setIsInitializingCamera(false);
+        setIsCameraOpen(false);
+        alert('Failed to show camera preview: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        return;
+      }
+
+      setIsInitializingCamera(false);
+      console.log('Camera preview ready and playing');
+    } catch (error: any) {
+      console.error('Error accessing camera:', error);
+      console.error('Error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      });
+
+      setIsInitializingCamera(false);
+      setIsCameraOpen(false);
+
+      let errorMessage = 'Failed to access camera. ';
+
+      if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
+        errorMessage += 'Please allow camera and microphone permissions in your browser settings.';
+      } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
+        errorMessage += 'No camera or microphone found on your device.';
+      } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
+        errorMessage += 'Camera is already in use by another application.';
+      } else if (error?.name === 'OverconstrainedError') {
+        errorMessage += 'Camera does not support the requested settings.';
+      } else if (error?.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Unknown error occurred. Please try again.';
+      }
+
+      alert(errorMessage);
+    }
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    if (!recordingStream) {
+      alert('No camera stream available');
+      return;
+    }
+
+    try {
+      recordedChunksRef.current = [];
 
       // Check for supported MIME types
       let mimeType = 'video/webm;codecs=vp8,opus';
       if (typeof MediaRecorder === 'undefined') {
         alert('Video recording is not supported in this browser.');
-        stream.getTracks().forEach(track => track.stop());
+        recordingStream.getTracks().forEach(track => track.stop());
         return;
       }
 
@@ -201,7 +323,7 @@ To resolve this, you would need to re-access the filter housing, remove the filt
           mimeType = 'video/mp4';
           if (!MediaRecorder.isTypeSupported(mimeType)) {
             alert('No supported video format found for recording.');
-            stream.getTracks().forEach(track => track.stop());
+            recordingStream.getTracks().forEach(track => track.stop());
             return;
           }
         }
@@ -209,7 +331,7 @@ To resolve this, you would need to re-access the filter housing, remove the filt
 
       console.log('Using MIME type:', mimeType);
 
-      const mediaRecorder = new MediaRecorder(stream, {
+      const mediaRecorder = new MediaRecorder(recordingStream, {
         mimeType: mimeType
       });
 
@@ -267,70 +389,57 @@ To resolve this, you would need to re-access the filter housing, remove the filt
       setIsRecording(true);
       console.log('Recording started');
     } catch (error: any) {
-      console.error('Error accessing camera:', error);
-      console.error('Error details:', {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack
-      });
-
-      let errorMessage = 'Failed to access camera. ';
-
-      if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
-        errorMessage += 'Please allow camera and microphone permissions in your browser settings.';
-      } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
-        errorMessage += 'No camera or microphone found on your device.';
-      } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
-        errorMessage += 'Camera is already in use by another application.';
-      } else if (error?.name === 'OverconstrainedError') {
-        errorMessage += 'Camera does not support the requested settings.';
-      } else if (error?.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += 'Unknown error occurred. Please try again.';
-      }
-
-      alert(errorMessage);
+      console.error('Error starting recording:', error);
+      alert('Failed to start recording: ' + (error?.message || 'Unknown error'));
     }
-  }, []);
+  }, [recordingStream]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
+  }, [isRecording]);
 
+  const closeCamera = useCallback(() => {
+    // Stop recording if active
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+
+    // Stop camera stream
     if (recordingStream) {
       recordingStream.getTracks().forEach(track => track.stop());
       setRecordingStream(null);
     }
 
+    // Clear video preview
     if (videoPreviewRef.current) {
       videoPreviewRef.current.srcObject = null;
     }
+
+    setIsCameraOpen(false);
   }, [isRecording, recordingStream]);
 
   const switchCamera = useCallback(async () => {
     try {
-      // Stop current recording
+      // Stop current stream
       if (recordingStream) {
         recordingStream.getTracks().forEach(track => track.stop());
-      }
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.stop();
       }
 
       // Wait a bit for cleanup
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Start with opposite camera
+      // Open with opposite camera
       const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
-      await startRecording(newFacing);
+      await openCamera(newFacing);
     } catch (error) {
       console.error('Error switching camera:', error);
       alert('Failed to switch camera. Please try again.');
     }
-  }, [recordingStream, isRecording, cameraFacing, startRecording]);
+  }, [recordingStream, cameraFacing, openCamera]);
 
   const handleAskQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -424,31 +533,76 @@ To resolve this, you would need to re-access the filter housing, remove the filt
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAskQuestion} className="space-y-4">
-                {isRecording && (
-                  <div className="border-2 border-red-500 rounded-lg p-3 sm:p-4 bg-red-50 dark:bg-red-950/20">
+                {isCameraOpen && (
+                  <div className={`border-2 rounded-lg p-3 sm:p-4 ${
+                    isInitializingCamera
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                      : isRecording
+                      ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                      : 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                  }`}>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
+                        {isInitializingCamera ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                            <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Initializing camera...</span>
+                          </>
+                        ) : isRecording ? (
+                          <>
+                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-green-600 dark:text-green-400">Camera Ready</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex gap-2">
+                        {!isRecording && (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={switchCamera}
+                            >
+                              <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="ml-2 hidden sm:inline">Switch</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              onClick={startRecording}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
+                              Start Recording
+                            </Button>
+                          </>
+                        )}
+                        {isRecording && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={stopRecording}
+                          >
+                            <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            Stop Recording
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={switchCamera}
+                          onClick={closeCamera}
                         >
-                          <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="ml-2 hidden sm:inline">Switch</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={stopRecording}
-                        >
-                          <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                          Stop
+                          <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="ml-2 hidden sm:inline">Close</span>
                         </Button>
                       </div>
                     </div>
@@ -458,7 +612,6 @@ To resolve this, you would need to re-access the filter housing, remove the filt
                       autoPlay
                       muted
                       playsInline
-                      webkit-playsinline="true"
                     />
                   </div>
                 )}
@@ -533,13 +686,17 @@ To resolve this, you would need to re-access the filter housing, remove the filt
                       type="button"
                       variant="outline"
                       size="lg"
-                      onClick={() => startRecording()}
-                      disabled={loading || uploading || isRecording}
+                      onClick={() => openCamera()}
+                      disabled={loading || uploading || isCameraOpen || isInitializingCamera}
                       title="Record video"
                       className="flex-1 sm:flex-none"
                     >
-                      <VideoIcon className="h-4 w-4" />
-                      <span className="ml-2 sm:hidden">Record</span>
+                      {isInitializingCamera ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <VideoIcon className="h-4 w-4" />
+                      )}
+                      <span className="ml-2 sm:hidden">{isInitializingCamera ? 'Starting...' : 'Record'}</span>
                     </Button>
                     <Button
                       type="submit"
