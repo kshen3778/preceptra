@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Loader2, MessageSquare, Send, Paperclip, X, Image as ImageIcon, Video } from 'lucide-react';
+import { Loader2, MessageSquare, Send, Paperclip, X, Image as ImageIcon, Video, VideoIcon, Square, SwitchCamera } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 
 interface QuestionAnswer {
@@ -33,6 +33,12 @@ export default function QuestionsPage() {
   }[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
   const [history, setHistory] = useState<QuestionAnswer[]>([
     {
       question: "Why are some people using a vacuum for a filter change?",
@@ -134,6 +140,198 @@ To resolve this, you would need to re-access the filter housing, remove the filt
     setUploadedMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const startRecording = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
+    try {
+      // Check if we're on HTTPS or localhost
+      const isSecureContext = window.isSecureContext || window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+
+      if (!isSecureContext) {
+        alert('Camera access requires HTTPS. Please access this site using https:// instead of http://');
+        return;
+      }
+
+      // Check if navigator.mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera access is not supported in this browser. Please use a modern browser like Chrome, Safari, or Firefox.');
+        return;
+      }
+
+      // Simple constraints that work across all devices
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: true
+      };
+
+      console.log('Requesting camera with constraints:', constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Camera stream obtained successfully');
+
+      setCameraFacing(facingMode);
+      setRecordingStream(stream);
+      recordedChunksRef.current = [];
+
+      // Show preview with proper setup
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+        // Wait for metadata to load before playing
+        videoPreviewRef.current.onloadedmetadata = () => {
+          if (videoPreviewRef.current) {
+            videoPreviewRef.current.play().catch(err => {
+              console.error('Error playing video preview:', err);
+            });
+          }
+        };
+      }
+
+      // Check for supported MIME types
+      let mimeType = 'video/webm;codecs=vp8,opus';
+      if (typeof MediaRecorder === 'undefined') {
+        alert('Video recording is not supported in this browser.');
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'video/mp4';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            alert('No supported video format found for recording.');
+            stream.getTracks().forEach(track => track.stop());
+            return;
+          }
+        }
+      }
+
+      console.log('Using MIME type:', mimeType);
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: mimeType
+      });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        console.log('Recording stopped, blob size:', blob.size);
+
+        // Check size limit (500MB)
+        if (blob.size > 500 * 1024 * 1024) {
+          alert('Recording exceeds 500MB limit');
+          return;
+        }
+
+        if (blob.size === 0) {
+          alert('Recording failed: no data captured');
+          return;
+        }
+
+        // Convert to base64
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          const extension = mimeType.includes('webm') ? 'webm' : 'mp4';
+          const filename = `recording-${Date.now()}.${extension}`;
+
+          setUploadedMedia((prev) => [...prev, {
+            type: 'video',
+            filename,
+            url: base64,
+            file: new File([blob], filename, { type: mimeType }),
+            base64: base64.split(',')[1],
+            mimeType: mimeType,
+          }]);
+        };
+        reader.onerror = (error) => {
+          console.error('Error reading recording:', error);
+          alert('Failed to process recording');
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        alert('Recording error occurred');
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // Collect data every second
+      setIsRecording(true);
+      console.log('Recording started');
+    } catch (error: any) {
+      console.error('Error accessing camera:', error);
+      console.error('Error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      });
+
+      let errorMessage = 'Failed to access camera. ';
+
+      if (error?.name === 'NotAllowedError' || error?.name === 'PermissionDeniedError') {
+        errorMessage += 'Please allow camera and microphone permissions in your browser settings.';
+      } else if (error?.name === 'NotFoundError' || error?.name === 'DevicesNotFoundError') {
+        errorMessage += 'No camera or microphone found on your device.';
+      } else if (error?.name === 'NotReadableError' || error?.name === 'TrackStartError') {
+        errorMessage += 'Camera is already in use by another application.';
+      } else if (error?.name === 'OverconstrainedError') {
+        errorMessage += 'Camera does not support the requested settings.';
+      } else if (error?.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Unknown error occurred. Please try again.';
+      }
+
+      alert(errorMessage);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+
+    if (recordingStream) {
+      recordingStream.getTracks().forEach(track => track.stop());
+      setRecordingStream(null);
+    }
+
+    if (videoPreviewRef.current) {
+      videoPreviewRef.current.srcObject = null;
+    }
+  }, [isRecording, recordingStream]);
+
+  const switchCamera = useCallback(async () => {
+    try {
+      // Stop current recording
+      if (recordingStream) {
+        recordingStream.getTracks().forEach(track => track.stop());
+      }
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+
+      // Wait a bit for cleanup
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Start with opposite camera
+      const newFacing = cameraFacing === 'user' ? 'environment' : 'user';
+      await startRecording(newFacing);
+    } catch (error) {
+      console.error('Error switching camera:', error);
+      alert('Failed to switch camera. Please try again.');
+    }
+  }, [recordingStream, isRecording, cameraFacing, startRecording]);
+
   const handleAskQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTask || !question.trim()) return;
@@ -226,6 +424,44 @@ To resolve this, you would need to re-access the filter housing, remove the filt
             </CardHeader>
             <CardContent>
               <form onSubmit={handleAskQuestion} className="space-y-4">
+                {isRecording && (
+                  <div className="border-2 border-red-500 rounded-lg p-3 sm:p-4 bg-red-50 dark:bg-red-950/20">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={switchCamera}
+                        >
+                          <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="ml-2 hidden sm:inline">Switch</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={stopRecording}
+                        >
+                          <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                          Stop
+                        </Button>
+                      </div>
+                    </div>
+                    <video
+                      ref={videoPreviewRef}
+                      className="w-full aspect-video max-w-md mx-auto rounded-lg bg-black"
+                      autoPlay
+                      muted
+                      playsInline
+                      webkit-playsinline="true"
+                    />
+                  </div>
+                )}
                 {uploadedMedia.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {uploadedMedia.map((media, index) => (
@@ -256,53 +492,74 @@ To resolve this, you would need to re-access the filter housing, remove the filt
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Input
                     type="text"
                     placeholder="Example: How do I troubleshoot X? What are the safety steps?"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    disabled={loading}
-                    className="flex-1"
+                    disabled={loading || isRecording}
+                    className="flex-1 min-w-0"
                   />
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*,video/*"
                     multiple
+                    capture="environment"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading || uploading}
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Paperclip className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={!question.trim() || loading}
-                    size="lg"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Thinking...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-4 w-4" />
-                        Ask
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={loading || uploading || isRecording}
+                      title="Attach files"
+                      className="flex-1 sm:flex-none"
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Paperclip className="h-4 w-4" />
+                          <span className="ml-2 sm:hidden">Attach</span>
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      onClick={() => startRecording()}
+                      disabled={loading || uploading || isRecording}
+                      title="Record video"
+                      className="flex-1 sm:flex-none"
+                    >
+                      <VideoIcon className="h-4 w-4" />
+                      <span className="ml-2 sm:hidden">Record</span>
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={!question.trim() || loading || isRecording}
+                      size="lg"
+                      className="flex-1 sm:flex-none"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <span className="hidden sm:inline">Thinking...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 sm:mr-2" />
+                          <span className="ml-2 sm:ml-0">Ask</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </CardContent>
