@@ -275,3 +275,65 @@ export async function getLatestSOP(taskName: string): Promise<SOP | null> {
   const sops = await loadSOPs(taskName);
   return sops.length > 0 ? sops[0] : null;
 }
+
+export interface QuestionMedia {
+  type: 'image' | 'video';
+  filename: string;
+  url: string;
+}
+
+/**
+ * List all media files for questions in a given task
+ * @param taskName - Name of the task
+ * @returns Array of media file information
+ */
+export async function listQuestionMedia(taskName: string): Promise<QuestionMedia[]> {
+  const mediaDir = path.join(process.cwd(), 'tasks', taskName, 'question-media');
+
+  try {
+    const entries = await fs.readdir(mediaDir);
+    const media: QuestionMedia[] = [];
+
+    for (const filename of entries) {
+      const ext = path.extname(filename).toLowerCase();
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      const videoExtensions = ['.mp4', '.mpeg', '.mov', '.avi', '.webm'];
+
+      if (imageExtensions.includes(ext)) {
+        media.push({
+          type: 'image',
+          filename,
+          url: `/api/question-media/${taskName}/${filename}`,
+        });
+      } else if (videoExtensions.includes(ext)) {
+        media.push({
+          type: 'video',
+          filename,
+          url: `/api/question-media/${taskName}/${filename}`,
+        });
+      }
+    }
+
+    return media;
+  } catch (error) {
+    // If question-media directory doesn't exist, return empty array
+    return [];
+  }
+}
+
+/**
+ * Delete a question media file
+ * @param taskName - Name of the task
+ * @param filename - Name of the media file to delete
+ * @returns Boolean indicating success
+ */
+export async function deleteQuestionMedia(taskName: string, filename: string): Promise<boolean> {
+  try {
+    const mediaPath = path.join(process.cwd(), 'tasks', taskName, 'question-media', filename);
+    await fs.unlink(mediaPath);
+    return true;
+  } catch (error) {
+    console.error('Error deleting question media:', error);
+    return false;
+  }
+}

@@ -411,13 +411,15 @@ function chunkTranscript(transcript: any, chunkSize: number = 5): Array<{
  * @param transcripts - Array of transcript objects
  * @param topK - Number of top chunks to retrieve
  * @param sop - Optional latest SOP to include as context
+ * @param media - Optional array of media attachments with base64 data
  * @returns Object containing markdown answer and sources
  */
 export async function answerQuestion(
   question: string,
   transcripts: any[],
   topK: number = 5,
-  sop?: { markdown: string; notes: string } | null
+  sop?: { markdown: string; notes: string } | null,
+  media?: Array<{ type: 'image' | 'video'; filename: string; base64: string; mimeType: string }>
 ): Promise<{
   markdown: string;
   sources: string[];
@@ -462,6 +464,26 @@ export async function answerQuestion(
     '\n\nTranscript Chunks:\n',
     chunksText,
   ];
+
+  // Add media attachments if available
+  if (media && media.length > 0) {
+    console.log('[AnswerQuestion] Including media attachments:', media.length);
+    content.push('\n\n---\n\nUser has attached the following media to help with the question:\n');
+
+    for (const mediaItem of media) {
+      try {
+        content.push({
+          inlineData: {
+            data: mediaItem.base64,
+            mimeType: mediaItem.mimeType,
+          },
+        });
+        content.push(`\n(${mediaItem.type === 'image' ? 'Image' : 'Video'} attachment: ${mediaItem.filename})\n`);
+      } catch (error) {
+        console.error('[AnswerQuestion] Failed to process media:', mediaItem.filename, error);
+      }
+    }
+  }
 
   // Add SOP context if available
   if (sop) {
