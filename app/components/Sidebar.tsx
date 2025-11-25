@@ -1,9 +1,10 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Upload, BookOpen, MessageSquare, LogOut } from 'lucide-react';
+import { Upload, BookOpen, MessageSquare, LogOut, User, ChevronDown, FileText } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select } from './ui/select';
 import { useTask } from '../contexts/TaskContext';
@@ -18,6 +19,25 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { selectedTask, setSelectedTask, tasks } = useTask();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
 
   const handleLogout = async () => {
     try {
@@ -116,14 +136,45 @@ export default function Sidebar() {
         </div>
       </nav>
       <div className="border-t p-4">
-        <Button
-          variant="outline"
-          className="w-full justify-start"
-          onClick={handleLogout}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </Button>
+        <div className="relative" ref={menuRef}>
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+          >
+            <div className="flex items-center">
+              <User className="mr-2 h-4 w-4" />
+              <span>User</span>
+            </div>
+            <ChevronDown className={cn(
+              "h-4 w-4 transition-transform",
+              isUserMenuOpen && "rotate-180"
+            )} />
+          </Button>
+
+          {isUserMenuOpen && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-background border rounded-md shadow-lg overflow-hidden z-50">
+              <Link
+                href="/tos"
+                className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors"
+                onClick={() => setIsUserMenuOpen(false)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Terms of Service
+              </Link>
+              <button
+                className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t"
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  handleLogout();
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
