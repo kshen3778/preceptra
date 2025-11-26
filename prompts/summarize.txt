@@ -22,23 +22,32 @@ You will receive a JSON array of transcript objects. Each transcript contains:
 - videoName: Name of the source video
 
 Output Format:
-Return a JSON object with this structure:
+Return your response as well-formatted Markdown. Start with a main title using #, then include sections as needed.
 
-{
-  "markdown": "# SOP Title\n\n## Overview\n[Overview text]\n\n## Steps\n\n### Step 1: [Step name]\n[Step description] (Source: video1.mp4 at ~15s)\n\n### Step 2: [Step name]\n[Step description] (Source: video2.mp4 at ~42s)\n\n...",
-  "notes": "Any important observations, variations between operators, or tribal knowledge notes"
-}
+If you have important observations, variations between operators, or tribal knowledge notes that don't fit in the main SOP, include them at the end in a section titled "## Notes" or "## Additional Observations".
 
-Example with citations:
-{
-  "markdown": "# Opening the Cash Register\n\n## Overview\nThis procedure covers the standard process for opening and preparing the cash register at the start of a shift.\n\n## Steps\n\n### Step 1: Verify Cash Drawer\nCount the starting cash to ensure it matches the expected amount. (Source: training_video_1.mp4 at ~45s)\n\n### Step 2: Log Into System\nEnter your employee ID and password into the POS terminal. (Source: training_video_2.mp4 at ~12s)\n\n### Step 3: Check Receipt Paper\nVerify that the receipt printer has adequate paper for the shift. (Source: training_video_1.mp4 at ~78s)",
-  "notes": "Most operators check the receipt paper before logging in, even though the formal SOP says to do it after. Two operators mentioned always keeping extra receipt rolls under the counter."
-}
+Example format:
+
+# Opening the Cash Register
+
+## Overview
+This procedure covers the standard process for opening and preparing the cash register at the start of a shift.
+
+## Steps
+
+### Step 1: Verify Cash Drawer
+Count the starting cash to ensure it matches the expected amount. (Source: training_video_1.mp4 at ~45s)
+
+### Step 2: Log Into System
+Enter your employee ID and password into the POS terminal. (Source: training_video_2.mp4 at ~12s)
+
+### Step 3: Check Receipt Paper
+Verify that the receipt printer has adequate paper for the shift. (Source: training_video_1.mp4 at ~78s)
+
+## Notes
+Most operators check the receipt paper before logging in, even though the formal SOP says to do it after. Two operators mentioned always keeping extra receipt rolls under the counter.
 
 Requirements:
-- The "markdown" field must contain a complete, well-formatted SOP in Markdown syntax
-- The "notes" field is optional but recommended for important observations
-- Both fields must be strings
-- The markdown should use proper Markdown formatting: # for main title, ## for sections, ### for subsections, - or 1. for lists
-- Escape any quotes in the markdown content using backslashes (e.g., \"example\" becomes \\\"example\\\")
-- Ensure all quotes, newlines, and special characters in the markdown are properly escaped for JSON
+- Use proper Markdown formatting: # for main title, ## for sections, ### for subsections, - or 1. for lists
+- Include source citations inline using the format: (Source: [videoName] at ~[timestamp]s)
+- Write naturally - no need to escape quotes or worry about JSON formatting
