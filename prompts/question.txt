@@ -45,18 +45,24 @@ Task:
 10. List the sources (chunk identifiers) that were used as evidence. If SOP was used, you may mention "Latest SOP" as a source
 
 Output Format:
-Return a JSON object with this structure:
+Return your answer as well-formatted Markdown. Start with "# Answer" as the main heading, then provide your comprehensive answer.
 
-{
-  "markdown": "# Answer\n\n[Your comprehensive answer in Markdown format, extracting both explicit and implicit information from the provided chunks]",
-  "sources": ["Chunk 1 (from videoName, timestamp)", "Chunk 2 (from videoName, timestamp)"]
-}
+At the end of your answer, include a "## Sources" section listing all chunks used as evidence.
+
+Example format:
+
+# Answer
+
+[Your comprehensive answer in Markdown format, extracting both explicit and implicit information from the provided chunks]
+
+## Sources
+- Chunk 1 (from videoName, timestamp)
+- Chunk 2 (from videoName, timestamp)
+- Latest SOP (if used)
 
 Requirements:
-- The "markdown" field must contain a comprehensive answer in Markdown format
-- The "sources" field must list all chunks used as evidence
-- Both fields must be strings/arrays (not objects)
-- The answer should extract tribal knowledge, implicit practices, and patterns FROM the provided sources
+- Use proper Markdown formatting
+- Extract tribal knowledge, implicit practices, and patterns FROM the provided sources
 - If information is partially available, provide what you can extract and note any gaps
-- Escape any quotes in the markdown content using backslashes (e.g., \"example\" becomes \\\"example\\\")
-- Ensure all quotes, newlines, and special characters in the markdown are properly escaped for JSON
+- Write naturally - no need to escape quotes or worry about JSON formatting
+- Always include a Sources section at the end

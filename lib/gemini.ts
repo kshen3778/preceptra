@@ -95,12 +95,9 @@ export async function summarizeTranscripts(transcripts: any[]): Promise<{
   const modelName = getModelName();
   console.log('[Summarize] Using model:', modelName);
   
-  // Use responseMimeType to force JSON output (available in gemini-1.5-pro and newer)
+  // Use plain text model - no JSON enforcement
   const model = getGenAI().getGenerativeModel({ 
     model: modelName,
-    generationConfig: {
-      responseMimeType: 'application/json',
-    },
   });
 
   // Read the prompt
@@ -130,187 +127,47 @@ export async function summarizeTranscripts(transcripts: any[]): Promise<{
     console.log('[Summarize] Raw response ending (last 500 chars):', text.substring(Math.max(0, text.length - 500)));
   }
 
-  // Parse JSON response
+  // Extract markdown content directly (no JSON parsing needed)
   try {
-    console.log('[Summarize] Attempting to parse JSON response...');
+    let markdown = text.trim();
     
-    // Try to extract JSON from markdown code blocks if present
-    let jsonText = text.trim();
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
-      console.log('[Summarize] Found JSON in code block, extracting...');
-      jsonText = jsonMatch[1].trim();
-    } else {
-      console.log('[Summarize] No code blocks found, using raw text');
+    // Remove markdown code blocks if present
+    const codeBlockMatch = markdown.match(/```(?:markdown)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      markdown = codeBlockMatch[1].trim();
     }
     
-    // Find the JSON object by looking for balanced braces
-    // Start from the first { and find the matching }
-    let jsonStart = jsonText.indexOf('{');
-    if (jsonStart === -1) {
-      throw new Error('No JSON object found in response');
+    // Extract notes section if present
+    let notes = '';
+    const notesMatch = markdown.match(/##\s+Notes?\s*\n\n([\s\S]*?)(?=\n##|$)/i) || 
+                      markdown.match(/##\s+Additional\s+Observations\s*\n\n([\s\S]*?)(?=\n##|$)/i);
+    if (notesMatch) {
+      notes = notesMatch[1].trim();
+      // Remove notes section from markdown
+      markdown = markdown.replace(/##\s+Notes?\s*\n\n[\s\S]*?(?=\n##|$)/i, '').trim();
+      markdown = markdown.replace(/##\s+Additional\s+Observations\s*\n\n[\s\S]*?(?=\n##|$)/i, '').trim();
     }
-
-    // Find the matching closing brace by counting braces
-    // This properly handles strings with quotes inside
-    let braceCount = 0;
-    let jsonEnd = -1;
-    let inString = false;
-    let escapeNext = false;
-
-    for (let i = jsonStart; i < jsonText.length; i++) {
-      const char = jsonText[i];
-      
-      if (escapeNext) {
-        escapeNext = false;
-        continue;
-      }
-      
-      if (char === '\\') {
-        escapeNext = true;
-        continue;
-      }
-      
-      if (char === '"' && !escapeNext) {
-        inString = !inString;
-        continue;
-      }
-      
-      if (!inString) {
-        if (char === '{') {
-          braceCount++;
-        } else if (char === '}') {
-          braceCount--;
-          if (braceCount === 0) {
-            jsonEnd = i + 1;
-            break;
-          }
-        }
-      }
-    }
-
-    if (jsonEnd === -1) {
-      // JSON might be incomplete, try to extract what we have
-      console.warn('[Summarize] JSON appears incomplete, attempting to extract partial JSON');
-      // Try to find where the JSON might have been cut off and attempt to close it
-      jsonText = jsonText.substring(jsonStart);
-      // Try to close unclosed strings and objects
-      if (!jsonText.endsWith('}')) {
-        // Count unclosed braces
-        const openBraces = (jsonText.match(/\{/g) || []).length;
-        const closeBraces = (jsonText.match(/\}/g) || []).length;
-        const missingBraces = openBraces - closeBraces;
-        
-        // Try to fix incomplete strings
-        let fixedText = jsonText;
-        // If we're in the middle of a string, try to close it
-        const lastQuote = fixedText.lastIndexOf('"');
-        const lastOpenBrace = fixedText.lastIndexOf('{');
-        if (lastQuote > lastOpenBrace) {
-          // Check if we're in a string by counting quotes before and after
-          const quotesBefore = (fixedText.substring(0, lastQuote).match(/"/g) || []).length;
-          if (quotesBefore % 2 === 1) {
-            // We're in a string, try to close it
-            const beforeLastQuote = fixedText.substring(0, lastQuote + 1);
-            fixedText = beforeLastQuote;
-          }
-        }
-        
-        // Close any unclosed braces
-        for (let i = 0; i < missingBraces; i++) {
-          fixedText += '}';
-        }
-        
-        // Try to close arrays if needed
-        const openArrays = (fixedText.match(/\[/g) || []).length;
-        const closeArrays = (fixedText.match(/\]/g) || []).length;
-        for (let i = 0; i < openArrays - closeArrays; i++) {
-          fixedText += ']';
-        }
-        
-        jsonText = fixedText;
-      }
-    } else {
-      jsonText = jsonText.substring(jsonStart, jsonEnd);
-    }
-
-    console.log('[Summarize] Extracted JSON text (first 300 chars):', jsonText.substring(0, 300));
-    if (jsonText.length > 300) {
-      console.log('[Summarize] Extracted JSON text (last 300 chars):', jsonText.substring(Math.max(0, jsonText.length - 300)));
-    }
-
-    // Try to fix common JSON issues like unescaped quotes
-    let fixedJsonText = jsonText;
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (firstError) {
-      console.warn('[Summarize] Initial JSON.parse failed, attempting to fix JSON issues...');
-      try {
-        fixedJsonText = fixJSONString(jsonText);
-        console.log('[Summarize] Fixed JSON, attempting parse again...');
-        parsed = JSON.parse(fixedJsonText);
-        console.log('[Summarize] Successfully parsed after fixing JSON issues');
-      } catch (secondError) {
-        // If fixing didn't work, throw the original error with more context
-        throw firstError;
-      }
-    }
-    console.log('[Summarize] JSON parsed successfully');
-    console.log('[Summarize] Parsed object keys:', Object.keys(parsed));
-
-    if (!parsed.markdown) {
-      console.error('[Summarize] ERROR: Response missing markdown field');
-      console.error('[Summarize] Parsed object:', JSON.stringify(parsed, null, 2));
-      throw new Error('Response missing markdown field');
-    }
-
-    console.log('[Summarize] Markdown field found, length:', parsed.markdown.length, 'chars');
-    console.log('[Summarize] Notes field:', parsed.notes ? `present (${parsed.notes.length} chars)` : 'missing');
+    
+    console.log('[Summarize] Extracted markdown, length:', markdown.length, 'chars');
+    console.log('[Summarize] Extracted notes, length:', notes.length, 'chars');
     console.log('[Summarize] SOP generation completed successfully');
 
     return {
-      markdown: parsed.markdown,
-      notes: parsed.notes || '',
+      markdown: markdown || text.trim(),
+      notes: notes,
     };
   } catch (error) {
-    console.error('[Summarize] ERROR: Failed to parse Gemini response as JSON');
+    console.error('[Summarize] ERROR: Failed to extract content from response');
     console.error('[Summarize] Raw response text (full):', text);
-    console.error('[Summarize] Response length:', text.length);
-    console.error('[Summarize] First 1000 chars:', text.substring(0, 1000));
-    if (text.length > 1000) {
-      console.error('[Summarize] Last 1000 chars:', text.substring(Math.max(0, text.length - 1000)));
-    }
     if (error instanceof Error) {
-      console.error('[Summarize] Parse error message:', error.message);
-      console.error('[Summarize] Parse error stack:', error.stack);
-      // Try to find the problematic position
-      const errorMatch = error.message.match(/position (\d+)/);
-      if (errorMatch) {
-        const pos = parseInt(errorMatch[1]);
-        console.error('[Summarize] Error at position:', pos);
-        console.error('[Summarize] Context around error (100 chars before and after):', 
-          text.substring(Math.max(0, pos - 100), Math.min(text.length, pos + 100)));
-      }
+      console.error('[Summarize] Error message:', error.message);
     }
     
-    // Fallback: Try to extract content from plain text/markdown if JSON parsing fails
-    console.log('[Summarize] Attempting fallback: extracting content from plain text...');
-    try {
-      // Look for markdown content that might be the SOP
-      const extractedMarkdown = text.trim();
-      if (extractedMarkdown.length > 50 && (extractedMarkdown.includes('#') || extractedMarkdown.includes('##'))) {
-        console.log('[Summarize] Extracted markdown from fallback, length:', extractedMarkdown.length);
-        return {
-          markdown: extractedMarkdown,
-          notes: 'Note: Response was not in JSON format, content extracted from plain text.',
-        };
-      }
-    } catch (fallbackError) {
-      console.error('[Summarize] Fallback extraction also failed:', fallbackError);
-    }
-    
-    throw new Error(`Gemini did not return valid JSON with markdown field. Response preview: ${text.substring(0, 200)}...`);
+    // Final fallback: return the raw text
+    return {
+      markdown: text.trim(),
+      notes: '',
+    };
   }
 }
 
@@ -532,12 +389,9 @@ export async function answerQuestion(
     }
   }
 
-  // Use responseMimeType to force JSON output (available in gemini-1.5-pro and newer)
+  // Use plain text model - no JSON enforcement
   const model = getGenAI().getGenerativeModel({ 
     model: getModelName(),
-    generationConfig: {
-      responseMimeType: 'application/json',
-    },
   });
 
   const result = await model.generateContent(content);
@@ -548,195 +402,53 @@ export async function answerQuestion(
   console.log('[AnswerQuestion] Raw response length:', text.length, 'chars');
   console.log('[AnswerQuestion] Raw response preview (first 500 chars):', text.substring(0, 500));
 
-  // Parse JSON response
+  // Extract markdown content directly (no JSON parsing needed)
   try {
-    // Try to extract JSON from markdown code blocks if present
-    let jsonText = text.trim();
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
-      console.log('[AnswerQuestion] Found JSON in code block, extracting...');
-      jsonText = jsonMatch[1].trim();
+    let markdown = text.trim();
+    
+    // Remove markdown code blocks if present
+    const codeBlockMatch = markdown.match(/```(?:markdown)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      markdown = codeBlockMatch[1].trim();
     }
     
-    // Find the JSON object by looking for balanced braces
-    // Start from the first { and find the matching }
-    let jsonStart = jsonText.indexOf('{');
-    if (jsonStart === -1) {
-      throw new Error('No JSON object found in response');
-    }
-
-    // Find the matching closing brace by counting braces
-    let braceCount = 0;
-    let jsonEnd = -1;
-    let inString = false;
-    let escapeNext = false;
-
-    console.log('[AnswerQuestion] Starting brace matching from position:', jsonStart);
-    console.log('[AnswerQuestion] Text length:', jsonText.length);
-
-    for (let i = jsonStart; i < jsonText.length; i++) {
-      const char = jsonText[i];
-      
-      if (escapeNext) {
-        escapeNext = false;
-        continue;
-      }
-      
-      if (char === '\\') {
-        escapeNext = true;
-        continue;
-      }
-      
-      if (char === '"' && !escapeNext) {
-        inString = !inString;
-        continue;
-      }
-      
-      if (!inString) {
-        if (char === '{') {
-          braceCount++;
-        } else if (char === '}') {
-          braceCount--;
-          if (braceCount === 0) {
-            jsonEnd = i + 1;
-            console.log('[AnswerQuestion] Found matching closing brace at position:', jsonEnd);
-            break;
-          }
-        }
-      }
-    }
-
-    console.log('[AnswerQuestion] Brace matching complete. jsonEnd:', jsonEnd, 'braceCount:', braceCount);
-
-    if (jsonEnd === -1) {
-      // JSON might be incomplete, try to extract what we have
-      console.warn('[AnswerQuestion] JSON appears incomplete, attempting to extract partial JSON');
-      // Try to find where the JSON might have been cut off and attempt to close it
-      jsonText = jsonText.substring(jsonStart);
-      // Try to close unclosed strings and objects
-      if (!jsonText.endsWith('}')) {
-        // Count unclosed braces
-        const openBraces = (jsonText.match(/\{/g) || []).length;
-        const closeBraces = (jsonText.match(/\}/g) || []).length;
-        const missingBraces = openBraces - closeBraces;
-        
-        // Try to fix incomplete strings
-        let fixedText = jsonText;
-        // If we're in the middle of a string, try to close it
-        const lastQuote = fixedText.lastIndexOf('"');
-        const lastOpenBrace = fixedText.lastIndexOf('{');
-        if (lastQuote > lastOpenBrace && !fixedText.substring(lastQuote + 1).match(/^[^"]*$/)) {
-          // Might be in a string, try to close it
-          const beforeLastQuote = fixedText.substring(0, lastQuote + 1);
-          const afterLastQuote = fixedText.substring(lastQuote + 1);
-          // Remove incomplete content after last quote
-          fixedText = beforeLastQuote;
-        }
-        
-        // Close any unclosed braces
-        for (let i = 0; i < missingBraces; i++) {
-          fixedText += '}';
-        }
-        
-        // Try to close arrays if needed
-        const openArrays = (fixedText.match(/\[/g) || []).length;
-        const closeArrays = (fixedText.match(/\]/g) || []).length;
-        for (let i = 0; i < openArrays - closeArrays; i++) {
-          fixedText += ']';
-        }
-        
-        jsonText = fixedText;
-      }
+    // Extract sources section if present
+    let sources: string[] = [];
+    const sourcesMatch = markdown.match(/##\s+Sources?\s*\n\n([\s\S]*?)(?=\n##|$)/i);
+    if (sourcesMatch) {
+      const sourcesText = sourcesMatch[1].trim();
+      // Parse sources from list format
+      sources = sourcesText
+        .split('\n')
+        .map(line => line.replace(/^[-*]\s*/, '').trim())
+        .filter(line => line.length > 0);
+      // Remove sources section from markdown
+      markdown = markdown.replace(/##\s+Sources?\s*\n\n[\s\S]*?(?=\n##|$)/i, '').trim();
     } else {
-      jsonText = jsonText.substring(jsonStart, jsonEnd);
+      // Fallback: use default sources from top chunks
+      sources = topChunks.map((item, idx) => `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s)`);
     }
-
-    console.log('[AnswerQuestion] Extracted JSON text (first 300 chars):', jsonText.substring(0, 300));
-    if (jsonText.length > 300) {
-      console.log('[AnswerQuestion] Extracted JSON text (last 300 chars):', jsonText.substring(Math.max(0, jsonText.length - 300)));
-    }
-    console.log('[AnswerQuestion] Extracted JSON length:', jsonText.length, 'chars');
-    console.log('[AnswerQuestion] JSON starts with:', jsonText.substring(0, 50));
-    console.log('[AnswerQuestion] JSON ends with:', jsonText.substring(Math.max(0, jsonText.length - 50)));
-
-    // Try to fix common JSON issues like unescaped quotes
-    let fixedJsonText = jsonText;
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch (firstError) {
-      console.warn('[AnswerQuestion] Initial JSON.parse failed, attempting to fix JSON issues...');
-      if (firstError instanceof Error) {
-        console.error('[AnswerQuestion] Initial parse error:', firstError.message);
-        // Try to find the error position
-        const errorMatch = firstError.message.match(/position (\d+)/);
-        if (errorMatch) {
-          const pos = parseInt(errorMatch[1]);
-          console.error('[AnswerQuestion] Error at position:', pos);
-          console.error('[AnswerQuestion] Context around error (200 chars before and after):', 
-            jsonText.substring(Math.max(0, pos - 200), Math.min(jsonText.length, pos + 200)));
-        }
-      }
-      try {
-        fixedJsonText = fixJSONString(jsonText);
-        console.log('[AnswerQuestion] Fixed JSON, attempting parse again...');
-        parsed = JSON.parse(fixedJsonText);
-        console.log('[AnswerQuestion] Successfully parsed after fixing JSON issues');
-      } catch (secondError) {
-        // If fixing didn't work, throw the original error with more context
-        console.error('[AnswerQuestion] Fixing JSON also failed');
-        if (secondError instanceof Error) {
-          console.error('[AnswerQuestion] Second parse error:', secondError.message);
-        }
-        throw firstError;
-      }
-    }
-
-    if (!parsed.markdown) {
-      console.error('[AnswerQuestion] ERROR: Response missing markdown field');
-      console.error('[AnswerQuestion] Parsed object keys:', Object.keys(parsed));
-      console.error('[AnswerQuestion] Parsed object:', JSON.stringify(parsed, null, 2));
-      throw new Error('Response missing markdown field');
-    }
-
-    console.log('[AnswerQuestion] JSON parsed successfully');
-    console.log('[AnswerQuestion] Markdown field length:', parsed.markdown.length, 'chars');
-    console.log('[AnswerQuestion] Sources:', parsed.sources?.length || 0, 'items');
+    
+    console.log('[AnswerQuestion] Extracted markdown, length:', markdown.length, 'chars');
+    console.log('[AnswerQuestion] Extracted sources:', sources.length, 'items');
+    console.log('[AnswerQuestion] Answer generation completed successfully');
 
     return {
-      markdown: parsed.markdown,
-      sources: parsed.sources || topChunks.map((item, idx) => `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s)`),
+      markdown: markdown || text.trim(),
+      sources: sources,
     };
   } catch (error) {
-    console.error('[AnswerQuestion] ERROR: Failed to parse Gemini response as JSON');
+    console.error('[AnswerQuestion] ERROR: Failed to extract content from response');
     console.error('[AnswerQuestion] Raw response text (full):', text);
-    console.error('[AnswerQuestion] Response length:', text.length);
-    console.error('[AnswerQuestion] First 1000 chars:', text.substring(0, 1000));
-    if (text.length > 1000) {
-      console.error('[AnswerQuestion] Last 1000 chars:', text.substring(Math.max(0, text.length - 1000)));
-    }
     if (error instanceof Error) {
-      console.error('[AnswerQuestion] Parse error message:', error.message);
-      console.error('[AnswerQuestion] Parse error stack:', error.stack);
+      console.error('[AnswerQuestion] Error message:', error.message);
     }
     
-    // Fallback: Try to extract content from plain text/markdown if JSON parsing fails
-    console.log('[AnswerQuestion] Attempting fallback: extracting content from plain text...');
-    try {
-      // Look for markdown content that might be the answer
-      const extractedMarkdown = text.trim();
-      if (extractedMarkdown.length > 50) {
-        console.log('[AnswerQuestion] Extracted markdown from fallback, length:', extractedMarkdown.length);
-        return {
-          markdown: extractedMarkdown,
-          sources: ['Response extracted from plain text format'],
-        };
-      }
-    } catch (fallbackError) {
-      console.error('[AnswerQuestion] Fallback extraction also failed:', fallbackError);
-    }
-    
-    throw new Error(`Gemini did not return valid JSON with markdown field. Response preview: ${text.substring(0, 200)}...`);
+    // Final fallback: return the raw text with default sources
+    return {
+      markdown: text.trim(),
+      sources: topChunks.map((item, idx) => `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s)`),
+    };
   }
 }
 

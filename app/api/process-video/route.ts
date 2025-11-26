@@ -65,9 +65,6 @@ export async function POST(request: NextRequest) {
     const transcribePrompt = await readPrompt('transcribe');
     const model = genAI.getGenerativeModel({ 
       model: modelName,
-      generationConfig: {
-        responseMimeType: 'application/json',
-      },
     });
 
     const transcribeResult = await model.generateContent([
