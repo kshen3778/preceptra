@@ -63,7 +63,12 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Generate transcription
     const transcribePrompt = await readPrompt('transcribe');
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel({ 
+      model: modelName,
+      generationConfig: {
+        responseMimeType: 'application/json',
+      },
+    });
 
     const transcribeResult = await model.generateContent([
       {
@@ -81,13 +86,67 @@ export async function POST(request: NextRequest) {
     // Parse transcription JSON
     let transcript: any;
     try {
+      // Try to extract JSON from markdown code blocks if present
+      let jsonText = transcribeText.trim();
       const jsonMatch = transcribeText.match(/```json\s*([\s\S]*?)\s*```/) || transcribeText.match(/```\s*([\s\S]*?)\s*```/);
-      const jsonText = jsonMatch ? jsonMatch[1] : transcribeText;
+      if (jsonMatch) {
+        jsonText = jsonMatch[1].trim();
+      }
+      
+      // Find the JSON object by looking for balanced braces
+      let jsonStart = jsonText.indexOf('{');
+      if (jsonStart === -1) {
+        throw new Error('No JSON object found in response');
+      }
+      
+      // Find the matching closing brace
+      let braceCount = 0;
+      let jsonEnd = -1;
+      let inString = false;
+      let escapeNext = false;
+      
+      for (let i = jsonStart; i < jsonText.length; i++) {
+        const char = jsonText[i];
+        
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+        
+        if (char === '\\') {
+          escapeNext = true;
+          continue;
+        }
+        
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          continue;
+        }
+        
+        if (!inString) {
+          if (char === '{') {
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              jsonEnd = i + 1;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (jsonEnd === -1) {
+        jsonEnd = jsonText.length;
+      }
+      
+      jsonText = jsonText.substring(jsonStart, jsonEnd);
       transcript = JSON.parse(jsonText);
       transcript.videoName = `recording-${Date.now()}`;
     } catch (error) {
-      console.error('Failed to parse transcription:', transcribeText);
-      throw new Error('Failed to parse transcription response');
+      console.error('[ProcessVideo] Failed to parse transcription:', error);
+      console.error('[ProcessVideo] Response text:', transcribeText.substring(0, 500));
+      throw new Error(`Failed to parse transcription response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     console.log('[ProcessVideo] Transcription complete, generating SOP...');

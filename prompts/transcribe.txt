@@ -1,5 +1,4 @@
 Transcribe the following video/audio accurately.
-Output JSON encoded in UTF-8.
 AUDIO TRANSCRIPTION REQUIREMENTS (1-second resolution):
 
 
