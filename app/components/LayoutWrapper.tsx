@@ -13,14 +13,15 @@ export default function LayoutWrapper({
 }) {
   const pathname = usePathname();
   const isLoginPage = pathname === '/login';
+  const isTryPage = pathname === '/try';
   const isWorkflowPage = ['/upload', '/procedure', '/questions'].includes(pathname);
 
   return (
     <TaskProvider>
       <div className="flex h-screen overflow-hidden">
-        {!isLoginPage && <Sidebar />}
+        {!isLoginPage && !isTryPage && <Sidebar />}
         <main className="flex-1 overflow-y-auto">
-          {!isLoginPage && (
+          {!isLoginPage && !isTryPage && (
             <>
               <TOSBanner />
               <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
