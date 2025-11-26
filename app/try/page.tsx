@@ -28,7 +28,7 @@ export default function TryPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
-  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('user');
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment');
   
   const [processing, setProcessing] = useState(false);
   const [transcript, setTranscript] = useState<any>(null);
@@ -49,7 +49,7 @@ export default function TryPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<QuestionAnswer[]>([]);
 
-  const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
+  const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'environment') => {
     setIsInitializingCamera(true);
     setIsCameraOpen(true);
 
