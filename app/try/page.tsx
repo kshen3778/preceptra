@@ -240,36 +240,47 @@ export default function TryPage() {
           const normalizedMimeType = mimeType.split(';')[0];
           const fileExtension = normalizedMimeType.includes('webm') ? 'webm' : 'mp4';
           
-          // Create a File with normalized MIME type
-          const videoFile = new File([blob], `recording-${Date.now()}.${fileExtension}`, {
-            type: normalizedMimeType
-          });
-          
-          // Step 1: Upload to S3 (bypasses Vercel's 4.5MB limit)
-          console.log('[TryPage] Uploading video to S3...');
-          const uploadFormData = new FormData();
-          uploadFormData.append('video', videoFile);
-
-          const uploadResponse = await fetch('/api/upload-to-s3', {
+          // Step 1: Get presigned URL from server (no file sent, bypasses Vercel limit)
+          console.log('[TryPage] Getting presigned URL for S3 upload...');
+          const urlResponse = await fetch('/api/upload-to-s3', {
             method: 'POST',
-            body: uploadFormData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mimeType: normalizedMimeType,
+              fileSize: blob.size,
+            }),
           });
 
-          if (!uploadResponse.ok) {
-            const error = await uploadResponse.json();
-            throw new Error(error.details || error.error || 'Failed to upload video to S3');
+          if (!urlResponse.ok) {
+            const error = await urlResponse.json();
+            throw new Error(error.details || error.error || 'Failed to get upload URL');
           }
 
-          const uploadData = await uploadResponse.json();
-          console.log('[TryPage] Video uploaded to S3, key:', uploadData.s3Key);
+          const urlData = await urlResponse.json();
+          console.log('[TryPage] Got presigned URL, uploading directly to S3...');
 
-          // Step 2: Process video using the S3 key
+          // Step 2: Upload directly to S3 using presigned URL (bypasses Vercel completely)
+          const s3UploadResponse = await fetch(urlData.presignedUrl, {
+            method: 'PUT',
+            body: blob,
+            headers: {
+              'Content-Type': normalizedMimeType,
+            },
+          });
+
+          if (!s3UploadResponse.ok) {
+            throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
+          }
+
+          console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
+
+          // Step 3: Process video using the S3 key
           const processResponse = await fetch('/api/process-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              s3Key: uploadData.s3Key,
-              mimeType: uploadData.mimeType,
+              s3Key: urlData.s3Key,
+              mimeType: urlData.mimeType,
             }),
           });
 
@@ -395,37 +406,48 @@ export default function TryPage() {
         setProcessing(true);
         try {
           const normalizedMimeType = currentMimeTypeRef.current.split(';')[0];
-          const fileExtension = normalizedMimeType.includes('webm') ? 'webm' : 'mp4';
           
-          const videoFile = new File([blob], `recording-${Date.now()}.${fileExtension}`, {
-            type: normalizedMimeType
-          });
-          
-          // Step 1: Upload to S3 (bypasses Vercel's 4.5MB limit)
-          console.log('[TryPage] Uploading video to S3...');
-          const uploadFormData = new FormData();
-          uploadFormData.append('video', videoFile);
-
-          const uploadResponse = await fetch('/api/upload-to-s3', {
+          // Step 1: Get presigned URL from server (no file sent, bypasses Vercel limit)
+          console.log('[TryPage] Getting presigned URL for S3 upload...');
+          const urlResponse = await fetch('/api/upload-to-s3', {
             method: 'POST',
-            body: uploadFormData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              mimeType: normalizedMimeType,
+              fileSize: blob.size,
+            }),
           });
 
-          if (!uploadResponse.ok) {
-            const error = await uploadResponse.json();
-            throw new Error(error.details || error.error || 'Failed to upload video to S3');
+          if (!urlResponse.ok) {
+            const error = await urlResponse.json();
+            throw new Error(error.details || error.error || 'Failed to get upload URL');
           }
 
-          const uploadData = await uploadResponse.json();
-          console.log('[TryPage] Video uploaded to S3, key:', uploadData.s3Key);
+          const urlData = await urlResponse.json();
+          console.log('[TryPage] Got presigned URL, uploading directly to S3...');
 
-          // Step 2: Process video using the S3 key
+          // Step 2: Upload directly to S3 using presigned URL (bypasses Vercel completely)
+          const s3UploadResponse = await fetch(urlData.presignedUrl, {
+            method: 'PUT',
+            body: blob,
+            headers: {
+              'Content-Type': normalizedMimeType,
+            },
+          });
+
+          if (!s3UploadResponse.ok) {
+            throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
+          }
+
+          console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
+
+          // Step 3: Process video using the S3 key
           const processResponse = await fetch('/api/process-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              s3Key: uploadData.s3Key,
-              mimeType: uploadData.mimeType,
+              s3Key: urlData.s3Key,
+              mimeType: urlData.mimeType,
             }),
           });
 

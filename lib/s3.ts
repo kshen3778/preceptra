@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 let s3Client: S3Client | null = null;
 
@@ -117,5 +118,31 @@ export function generateS3Key(mimeType: string): string {
                    mimeType.includes('quicktime') ? 'mov' :
                    mimeType.includes('x-msvideo') ? 'avi' : 'mp4';
   return `videos/temp/${timestamp}.${extension}`;
+}
+
+/**
+ * Generate a presigned URL for direct client-side upload to S3
+ * @param key S3 object key
+ * @param contentType MIME type
+ * @param expiresIn Expiration time in seconds (default: 300 = 5 minutes)
+ * @returns Presigned URL
+ */
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 300
+): Promise<string> {
+  const client = getS3Client();
+  const bucketName = getBucketName();
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  const url = await getSignedUrl(client, command, { expiresIn });
+  console.log(`[S3] Generated presigned URL for: ${key} (expires in ${expiresIn}s)`);
+  return url;
 }
 
