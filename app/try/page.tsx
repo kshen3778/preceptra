@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Loader2, VideoIcon, Square, MessageSquare, Send, Paperclip, X, Image as ImageIcon, Video } from 'lucide-react';
+import { Loader2, VideoIcon, Square, MessageSquare, Send, Paperclip, X, Image as ImageIcon, Video, SwitchCamera } from 'lucide-react';
 
 type TabType = 'transcription' | 'sop' | 'questions';
 
@@ -29,6 +29,8 @@ export default function TryPage() {
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment');
+  const currentMimeTypeRef = useRef<string>('video/webm;codecs=vp8,opus');
+  const isSwitchingCameraRef = useRef<boolean>(false);
   
   const [processing, setProcessing] = useState(false);
   const [transcript, setTranscript] = useState<any>(null);
@@ -191,6 +193,7 @@ export default function TryPage() {
         }
       }
 
+      currentMimeTypeRef.current = mimeType;
       const mediaRecorder = new MediaRecorder(recordingStream, {
         mimeType: mimeType
       });
@@ -202,6 +205,11 @@ export default function TryPage() {
       };
 
       mediaRecorder.onstop = async () => {
+        // If we're switching cameras, don't process the video yet
+        if (isSwitchingCameraRef.current) {
+          return;
+        }
+
         const blob = new Blob(recordedChunksRef.current, { type: mimeType });
 
         if (blob.size > 500 * 1024 * 1024) {
@@ -278,10 +286,140 @@ export default function TryPage() {
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
+      isSwitchingCameraRef.current = false; // Ensure we process the video
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   }, [isRecording]);
+
+  const switchCameraDuringRecording = useCallback(async () => {
+    if (!isRecording || !mediaRecorderRef.current || !recordingStream) {
+      return;
+    }
+
+    try {
+      // Stop current recording (but don't process it)
+      isSwitchingCameraRef.current = true;
+      mediaRecorderRef.current.stop();
+      
+      // Wait a moment for the recorder to stop
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Stop old stream tracks
+      recordingStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+
+      // Switch to opposite camera
+      const newFacingMode = cameraFacing === 'user' ? 'environment' : 'user';
+      
+      // Get new camera stream
+      const constraints = {
+        video: {
+          facingMode: newFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: true
+      };
+
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      // Update video preview
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = newStream;
+      }
+
+      setCameraFacing(newFacingMode);
+      setRecordingStream(newStream);
+
+      // Start new recorder with same MIME type
+      const newMediaRecorder = new MediaRecorder(newStream, {
+        mimeType: currentMimeTypeRef.current
+      });
+
+      newMediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      newMediaRecorder.onstop = async () => {
+        // Only process if we're actually stopping (not switching again)
+        if (isSwitchingCameraRef.current) {
+          return;
+        }
+
+        const blob = new Blob(recordedChunksRef.current, { type: currentMimeTypeRef.current });
+
+        if (blob.size > 500 * 1024 * 1024) {
+          alert('Recording exceeds 500MB limit');
+          return;
+        }
+
+        if (blob.size === 0) {
+          alert('Recording failed: no data captured');
+          return;
+        }
+
+        // Close camera
+        if (newStream) {
+          newStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+          setRecordingStream(null);
+        }
+        if (videoPreviewRef.current) {
+          videoPreviewRef.current.srcObject = null;
+        }
+        setIsCameraOpen(false);
+        setIsRecording(false);
+
+        // Upload and process video
+        setProcessing(true);
+        try {
+          const normalizedMimeType = currentMimeTypeRef.current.split(';')[0];
+          const fileExtension = normalizedMimeType.includes('webm') ? 'webm' : 'mp4';
+          
+          const videoFile = new File([blob], `recording-${Date.now()}.${fileExtension}`, {
+            type: normalizedMimeType
+          });
+          
+          const formData = new FormData();
+          formData.append('video', videoFile);
+
+          const response = await fetch('/api/process-video', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.details || error.error || 'Failed to process video');
+          }
+
+          const data = await response.json();
+          setTranscript(data.transcript);
+          setSop(data.sop);
+          setActiveTab('transcription');
+        } catch (error) {
+          console.error('Failed to process video:', error);
+          alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
+        } finally {
+          setProcessing(false);
+        }
+      };
+
+      newMediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        alert('Recording error occurred');
+      };
+
+      mediaRecorderRef.current = newMediaRecorder;
+      newMediaRecorder.start(1000);
+      isSwitchingCameraRef.current = false;
+    } catch (error: any) {
+      console.error('Error switching camera:', error);
+      isSwitchingCameraRef.current = false;
+      alert('Failed to switch camera: ' + (error?.message || 'Unknown error'));
+    }
+  }, [isRecording, recordingStream, cameraFacing]);
 
   const closeCamera = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -525,16 +663,29 @@ export default function TryPage() {
                         </Button>
                       )}
                       {isRecording && (
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={stopRecording}
-                          className="flex-1 sm:flex-none"
-                        >
-                          <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                          Stop Recording
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={switchCameraDuringRecording}
+                            className="flex-1 sm:flex-none"
+                            title="Switch Camera"
+                          >
+                            <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="ml-2 hidden sm:inline">Switch</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={stopRecording}
+                            className="flex-1 sm:flex-none"
+                          >
+                            <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            Stop Recording
+                          </Button>
+                        </>
                       )}
                       <Button
                         type="button"
