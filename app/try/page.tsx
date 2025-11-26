@@ -518,7 +518,7 @@ export default function TryPage() {
                           variant="default"
                           size="sm"
                           onClick={startRecording}
-                          className="bg-red-600 hover:bg-red-700 flex-1 sm:flex-none"
+                          className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
                         >
                           <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
                           Start Recording
