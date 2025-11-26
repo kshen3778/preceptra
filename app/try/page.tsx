@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Loader2, VideoIcon, Square, MessageSquare, Send, Paperclip, X, Image as ImageIcon, Video, SwitchCamera } from 'lucide-react';
+import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X } from 'lucide-react';
 
 type TabType = 'transcription' | 'sop' | 'questions';
 
@@ -245,20 +245,40 @@ export default function TryPage() {
             type: normalizedMimeType
           });
           
-          const formData = new FormData();
-          formData.append('video', videoFile);
+          // Step 1: Upload to S3 (bypasses Vercel's 4.5MB limit)
+          console.log('[TryPage] Uploading video to S3...');
+          const uploadFormData = new FormData();
+          uploadFormData.append('video', videoFile);
 
-          const response = await fetch('/api/process-video', {
+          const uploadResponse = await fetch('/api/upload-to-s3', {
             method: 'POST',
-            body: formData,
+            body: uploadFormData,
           });
 
-          if (!response.ok) {
-            const error = await response.json();
+          if (!uploadResponse.ok) {
+            const error = await uploadResponse.json();
+            throw new Error(error.details || error.error || 'Failed to upload video to S3');
+          }
+
+          const uploadData = await uploadResponse.json();
+          console.log('[TryPage] Video uploaded to S3, key:', uploadData.s3Key);
+
+          // Step 2: Process video using the S3 key
+          const processResponse = await fetch('/api/process-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              s3Key: uploadData.s3Key,
+              mimeType: uploadData.mimeType,
+            }),
+          });
+
+          if (!processResponse.ok) {
+            const error = await processResponse.json();
             throw new Error(error.details || error.error || 'Failed to process video');
           }
 
-          const data = await response.json();
+          const data = await processResponse.json();
           setTranscript(data.transcript);
           setSop(data.sop);
           setActiveTab('transcription');
@@ -381,20 +401,40 @@ export default function TryPage() {
             type: normalizedMimeType
           });
           
-          const formData = new FormData();
-          formData.append('video', videoFile);
+          // Step 1: Upload to S3 (bypasses Vercel's 4.5MB limit)
+          console.log('[TryPage] Uploading video to S3...');
+          const uploadFormData = new FormData();
+          uploadFormData.append('video', videoFile);
 
-          const response = await fetch('/api/process-video', {
+          const uploadResponse = await fetch('/api/upload-to-s3', {
             method: 'POST',
-            body: formData,
+            body: uploadFormData,
           });
 
-          if (!response.ok) {
-            const error = await response.json();
+          if (!uploadResponse.ok) {
+            const error = await uploadResponse.json();
+            throw new Error(error.details || error.error || 'Failed to upload video to S3');
+          }
+
+          const uploadData = await uploadResponse.json();
+          console.log('[TryPage] Video uploaded to S3, key:', uploadData.s3Key);
+
+          // Step 2: Process video using the S3 key
+          const processResponse = await fetch('/api/process-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              s3Key: uploadData.s3Key,
+              mimeType: uploadData.mimeType,
+            }),
+          });
+
+          if (!processResponse.ok) {
+            const error = await processResponse.json();
             throw new Error(error.details || error.error || 'Failed to process video');
           }
 
-          const data = await response.json();
+          const data = await processResponse.json();
           setTranscript(data.transcript);
           setSop(data.sop);
           setActiveTab('transcription');
@@ -515,12 +555,6 @@ export default function TryPage() {
           transcript,
           sop,
           question: question.trim(),
-          media: uploadedMedia.map((m: typeof uploadedMedia[0]) => ({
-            type: m.type,
-            filename: m.filename,
-            base64: m.base64,
-            mimeType: m.mimeType,
-          })),
         }),
       });
 
@@ -530,16 +564,10 @@ export default function TryPage() {
           question: question.trim(),
           markdown: data.markdown || '',
           sources: data.sources || [],
-          media: uploadedMedia.map((m: typeof uploadedMedia[0]) => ({
-            type: m.type,
-            filename: m.filename,
-            url: m.url,
-          })),
         };
 
         setHistory((prevHistory: QuestionAnswer[]) => [newQuestion, ...prevHistory]);
         setQuestion('');
-        setUploadedMedia([]);
       } else {
         const error = await response.json();
         alert(`Failed to answer question: ${error.details || error.error}`);
@@ -865,36 +893,6 @@ export default function TryPage() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleAskQuestion} className="space-y-4">
-                    {uploadedMedia.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {uploadedMedia.map((media, index) => (
-                          <div
-                            key={index}
-                            className="relative group border-2 border-border rounded-lg overflow-hidden"
-                          >
-                            {media.type === 'image' ? (
-                              <div className="w-20 h-20 bg-muted flex items-center justify-center">
-                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                              </div>
-                            ) : (
-                              <div className="w-20 h-20 bg-muted flex items-center justify-center">
-                                <Video className="h-8 w-8 text-muted-foreground" />
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveMedia(index)}
-                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
-                              {media.file.name}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         type="text"
@@ -904,51 +902,24 @@ export default function TryPage() {
                         disabled={loading}
                         className="flex-1 min-w-0"
                       />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="lg"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={loading || uploading}
-                          className="flex-1 sm:flex-none"
-                        >
-                          {uploading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Paperclip className="h-4 w-4" />
-                              <span className="ml-2 sm:hidden">Attach</span>
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          type="submit"
-                          disabled={!question.trim() || loading}
-                          size="lg"
-                          className="flex-1 sm:flex-none"
-                        >
-                          {loading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              <span className="hidden sm:inline">Thinking...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 sm:mr-2" />
-                              <span className="ml-2 sm:ml-0">Ask</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      <Button
+                        type="submit"
+                        disabled={!question.trim() || loading}
+                        size="lg"
+                        className="flex-1 sm:flex-none"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <span className="hidden sm:inline">Thinking...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 sm:mr-2" />
+                            <span className="ml-2 sm:ml-0">Ask</span>
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </form>
                 </CardContent>
@@ -965,30 +936,6 @@ export default function TryPage() {
                           </div>
                           <div className="flex-1">
                             <span className="leading-relaxed">{qa.question}</span>
-                            {qa.media && qa.media.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-3">
-                                {qa.media?.map((mediaItem: { type: 'image' | 'video'; filename: string; url: string }, mediaIndex: number) => (
-                                  <div
-                                    key={mediaIndex}
-                                    className="border border-border rounded-lg overflow-hidden"
-                                  >
-                                    {mediaItem.type === 'image' ? (
-                                      <img
-                                        src={mediaItem.url}
-                                        alt={mediaItem.filename}
-                                        className="w-32 h-32 object-cover"
-                                      />
-                                    ) : (
-                                      <video
-                                        src={mediaItem.url}
-                                        controls
-                                        className="w-32 h-32 object-cover"
-                                      />
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         </CardTitle>
                       </CardHeader>

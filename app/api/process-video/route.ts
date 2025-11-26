@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { readPrompt, summarizeTranscripts } from '@/lib/gemini';
+import { getFromS3, deleteFromS3 } from '@/lib/s3';
 
 let genAI: GoogleGenerativeAI;
 
@@ -20,43 +21,29 @@ function getModelName(): string {
 }
 
 export async function POST(request: NextRequest) {
+  let s3Key: string | null = null;
+  
   try {
-    const formData = await request.formData();
-    const videoFile = formData.get('video') as File;
+    const body = await request.json();
+    const { s3Key: providedS3Key, mimeType } = body;
 
-    if (!videoFile) {
+    if (!providedS3Key || typeof providedS3Key !== 'string') {
       return NextResponse.json(
-        { error: 'No video file provided' },
+        { error: 'No S3 key provided. File must be uploaded to S3 first.' },
         { status: 400 }
       );
     }
 
-    // Validate file type (check base MIME type, ignoring codecs parameter)
-    const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-    const baseMimeType = videoFile.type.split(';')[0]; // Remove codecs parameter if present
-    if (!allowedTypes.includes(baseMimeType)) {
-      return NextResponse.json(
-        { error: `Invalid file type. Only video files are allowed. Received: ${videoFile.type}` },
-        { status: 400 }
-      );
-    }
+    s3Key = providedS3Key;
+    const baseMimeType = mimeType || 'video/mp4';
 
-    // Validate file size (max 500MB)
-    const maxSize = 500 * 1024 * 1024;
-    if (videoFile.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File size exceeds 500MB limit' },
-        { status: 400 }
-      );
-    }
+    console.log('[ProcessVideo] Fetching video from S3:', s3Key);
 
     const genAI = getGenAI();
     const modelName = getModelName();
 
-    // Convert file to buffer for inline data (File API may not be available in all SDK versions)
-    // We'll use inlineData but ensure we don't store the file locally
-    const arrayBuffer = await videoFile.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Fetch file from S3
+    const buffer = await getFromS3(providedS3Key);
     const videoBase64 = buffer.toString('base64');
 
     console.log('[ProcessVideo] Processing video with Gemini...');
@@ -73,7 +60,7 @@ export async function POST(request: NextRequest) {
         {
           inlineData: {
             data: videoBase64,
-            mimeType: videoFile.type,
+            mimeType: baseMimeType,
           },
         },
         transcribePrompt,
@@ -193,6 +180,17 @@ export async function POST(request: NextRequest) {
 
     console.log('[ProcessVideo] SOP generation complete');
 
+    // Clean up: Delete the file from S3
+    if (s3Key) {
+      try {
+        await deleteFromS3(s3Key);
+        console.log('[ProcessVideo] File deleted from S3');
+      } catch (deleteError) {
+        console.warn('[ProcessVideo] Failed to delete file from S3:', deleteError);
+        // Don't fail the request if deletion fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       transcript,
@@ -202,6 +200,16 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    // Try to clean up S3 file even on error
+    if (s3Key) {
+      try {
+        await deleteFromS3(s3Key);
+        console.log('[ProcessVideo] Cleaned up S3 file after error');
+      } catch (deleteError) {
+        console.warn('[ProcessVideo] Failed to clean up S3 file:', deleteError);
+      }
+    }
+
     console.error('Process video error:', error);
     return NextResponse.json(
       {
