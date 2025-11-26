@@ -67,24 +67,54 @@ export async function POST(request: NextRequest) {
       model: modelName,
     });
 
-    const transcribeResult = await model.generateContent([
-      {
-        inlineData: {
-          data: videoBase64,
-          mimeType: videoFile.type,
+    let transcribeResult;
+    try {
+      transcribeResult = await model.generateContent([
+        {
+          inlineData: {
+            data: videoBase64,
+            mimeType: videoFile.type,
+          },
         },
-      },
-      transcribePrompt,
-    ]);
+        transcribePrompt,
+      ]);
+    } catch (apiError: any) {
+      console.error('[ProcessVideo] Gemini API error:', apiError);
+      const errorMessage = apiError?.message || apiError?.toString() || 'Unknown API error';
+      throw new Error(`Gemini API error: ${errorMessage}. This might be due to video size limits, API quota, or network issues.`);
+    }
 
     const transcribeResponse = transcribeResult.response;
-    const transcribeText = transcribeResponse.text();
+    
+    // Check if response indicates an error
+    if (!transcribeResponse || !transcribeResponse.text) {
+      console.error('[ProcessVideo] Invalid response from Gemini:', transcribeResponse);
+      throw new Error('Invalid response from Gemini API');
+    }
+    
+    let transcribeText: string;
+    try {
+      transcribeText = transcribeResponse.text();
+    } catch (textError: any) {
+      console.error('[ProcessVideo] Error getting text from response:', textError);
+      throw new Error(`Failed to get response text: ${textError?.message || 'Unknown error'}`);
+    }
+
+    // Check if response is an error message before trying to parse JSON
+    const trimmedText = transcribeText.trim();
+    if (trimmedText.startsWith('Request Error') || 
+        trimmedText.startsWith('Error') || 
+        trimmedText.startsWith('Failed') ||
+        trimmedText.toLowerCase().includes('error') && !trimmedText.includes('{')) {
+      console.error('[ProcessVideo] Gemini returned an error response:', trimmedText);
+      throw new Error(`Gemini API error: ${trimmedText.substring(0, 200)}`);
+    }
 
     // Parse transcription JSON
     let transcript: any;
     try {
       // Try to extract JSON from markdown code blocks if present
-      let jsonText = transcribeText.trim();
+      let jsonText = trimmedText;
       const jsonMatch = transcribeText.match(/```json\s*([\s\S]*?)\s*```/) || transcribeText.match(/```\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         jsonText = jsonMatch[1].trim();
@@ -93,7 +123,11 @@ export async function POST(request: NextRequest) {
       // Find the JSON object by looking for balanced braces
       let jsonStart = jsonText.indexOf('{');
       if (jsonStart === -1) {
-        throw new Error('No JSON object found in response');
+        // If no JSON found, check if it's an error message
+        if (jsonText.toLowerCase().includes('error') || jsonText.toLowerCase().includes('failed')) {
+          throw new Error(`Gemini returned an error: ${jsonText.substring(0, 200)}`);
+        }
+        throw new Error('No JSON object found in response. Response: ' + jsonText.substring(0, 200));
       }
       
       // Find the matching closing brace
@@ -142,7 +176,13 @@ export async function POST(request: NextRequest) {
       transcript.videoName = `recording-${Date.now()}`;
     } catch (error) {
       console.error('[ProcessVideo] Failed to parse transcription:', error);
-      console.error('[ProcessVideo] Response text:', transcribeText.substring(0, 500));
+      console.error('[ProcessVideo] Full response text:', transcribeText);
+      console.error('[ProcessVideo] Response length:', transcribeText.length);
+      
+      // Provide more helpful error message
+      if (error instanceof SyntaxError && error.message.includes('JSON')) {
+        throw new Error(`Failed to parse transcription: Gemini returned invalid JSON. Response preview: ${transcribeText.substring(0, 300)}`);
+      }
       throw new Error(`Failed to parse transcription response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
