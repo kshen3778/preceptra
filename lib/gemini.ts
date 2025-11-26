@@ -300,6 +300,7 @@ export async function summarizeTranscripts(transcripts: any[]): Promise<{
 /**
  * Fix common JSON issues like unescaped quotes in strings
  * This handles cases where Gemini generates JSON with unescaped quotes inside string values
+ * Strategy: When inside a string, escape quotes unless they're clearly followed by JSON structure
  */
 function fixJSONString(jsonText: string): string {
   let result = '';
@@ -327,18 +328,32 @@ function fixJSONString(jsonText: string): string {
         inString = true;
         result += char;
       } else {
-        // We're inside a string, check if this quote should end it
-        // Look ahead to see what comes after this quote (ignoring whitespace)
-        const afterQuote = jsonText.substring(i + 1);
-        const nextNonWhitespaceMatch = afterQuote.match(/^\s*([:,\}\]])/);
+        // We're inside a string value - need to determine if this quote ends it
+        const lookAhead = jsonText.substring(i + 1, Math.min(i + 50, jsonText.length));
+        const trimmedLookAhead = lookAhead.trim();
         
-        if (nextNonWhitespaceMatch) {
-          // This quote is followed by a JSON structural character, so it ends the string
+        // Check if quote is followed by clear JSON structure (not content)
+        // Pattern 1: quote, whitespace, comma, whitespace, quote (new field: "key": "value")
+        // Pattern 2: quote, whitespace, comma, whitespace, closing brace/bracket
+        // Pattern 3: quote, whitespace, closing brace/bracket (end of object/array)
+        // Pattern 4: quote at end of input
+        
+        // If we see letters/numbers after the quote (after whitespace), it's likely content
+        const hasContentAfter = /^\s*[a-zA-Z0-9]/.test(lookAhead);
+        
+        // Clear end-of-string patterns
+        const isEndOfString = 
+          /^\s*,\s*"/.test(trimmedLookAhead) ||     // Comma then quote (new field)
+          /^\s*,\s*[}\]]/.test(trimmedLookAhead) || // Comma then closing brace/bracket
+          /^\s*[}\]]/.test(trimmedLookAhead) ||     // Closing brace/bracket
+          trimmedLookAhead === '';                   // End of input
+        
+        if (isEndOfString && !hasContentAfter) {
+          // This quote appears to end the string
           inString = false;
           result += char;
         } else {
-          // This quote is inside the string content and not properly escaped
-          // Escape it
+          // This quote is inside the string content - escape it
           result += '\\"';
         }
       }
