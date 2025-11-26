@@ -22,7 +22,7 @@ You will receive a JSON array of transcript objects. Each transcript contains:
 - videoName: Name of the source video
 
 Output Format:
-You MUST return a valid JSON object with this EXACT structure (no other fields, no extra text):
+Return a JSON object with this structure:
 
 {
   "markdown": "# SOP Title\n\n## Overview\n[Overview text]\n\n## Steps\n\n### Step 1: [Step name]\n[Step description] (Source: video1.mp4 at ~15s)\n\n### Step 2: [Step name]\n[Step description] (Source: video2.mp4 at ~42s)\n\n...",
@@ -36,10 +36,9 @@ Example with citations:
 }
 
 Requirements:
-- The "markdown" field is REQUIRED and must contain a complete, well-formatted SOP in Markdown syntax
+- The "markdown" field must contain a complete, well-formatted SOP in Markdown syntax
 - The "notes" field is optional but recommended for important observations
-- Both fields must be strings (not objects or arrays)
+- Both fields must be strings
 - The markdown should use proper Markdown formatting: # for main title, ## for sections, ### for subsections, - or 1. for lists
-- Return ONLY the JSON object, no explanatory text before or after
-- Do not wrap the JSON in markdown code blocks
-- Ensure the JSON is valid and can be parsed by JSON.parse()
+- Escape any quotes in the markdown content using backslashes (e.g., \"example\" becomes \\\"example\\\")
+- Ensure all quotes, newlines, and special characters in the markdown are properly escaped for JSON

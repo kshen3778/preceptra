@@ -45,7 +45,7 @@ Task:
 10. List the sources (chunk identifiers) that were used as evidence. If SOP was used, you may mention "Latest SOP" as a source
 
 Output Format:
-You MUST return a valid JSON object with this EXACT structure (no other fields, no extra text):
+Return a JSON object with this structure:
 
 {
   "markdown": "# Answer\n\n[Your comprehensive answer in Markdown format, extracting both explicit and implicit information from the provided chunks]",
@@ -53,11 +53,10 @@ You MUST return a valid JSON object with this EXACT structure (no other fields, 
 }
 
 Requirements:
-- The "markdown" field is REQUIRED and must contain a comprehensive answer in Markdown format
-- The "sources" field is REQUIRED and must list all chunks used as evidence
+- The "markdown" field must contain a comprehensive answer in Markdown format
+- The "sources" field must list all chunks used as evidence
 - Both fields must be strings/arrays (not objects)
 - The answer should extract tribal knowledge, implicit practices, and patterns FROM the provided sources
 - If information is partially available, provide what you can extract and note any gaps
-- Return ONLY the JSON object, no explanatory text before or after
-- Do not wrap the JSON in markdown code blocks
-- Ensure the JSON is valid and can be parsed by JSON.parse()
+- Escape any quotes in the markdown content using backslashes (e.g., \"example\" becomes \\\"example\\\")
+- Ensure all quotes, newlines, and special characters in the markdown are properly escaped for JSON

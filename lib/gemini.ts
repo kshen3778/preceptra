@@ -293,6 +293,23 @@ export async function summarizeTranscripts(transcripts: any[]): Promise<{
           text.substring(Math.max(0, pos - 100), Math.min(text.length, pos + 100)));
       }
     }
+    
+    // Fallback: Try to extract content from plain text/markdown if JSON parsing fails
+    console.log('[Summarize] Attempting fallback: extracting content from plain text...');
+    try {
+      // Look for markdown content that might be the SOP
+      const extractedMarkdown = text.trim();
+      if (extractedMarkdown.length > 50 && (extractedMarkdown.includes('#') || extractedMarkdown.includes('##'))) {
+        console.log('[Summarize] Extracted markdown from fallback, length:', extractedMarkdown.length);
+        return {
+          markdown: extractedMarkdown,
+          notes: 'Note: Response was not in JSON format, content extracted from plain text.',
+        };
+      }
+    } catch (fallbackError) {
+      console.error('[Summarize] Fallback extraction also failed:', fallbackError);
+    }
+    
     throw new Error(`Gemini did not return valid JSON with markdown field. Response preview: ${text.substring(0, 200)}...`);
   }
 }
@@ -702,6 +719,23 @@ export async function answerQuestion(
       console.error('[AnswerQuestion] Parse error message:', error.message);
       console.error('[AnswerQuestion] Parse error stack:', error.stack);
     }
+    
+    // Fallback: Try to extract content from plain text/markdown if JSON parsing fails
+    console.log('[AnswerQuestion] Attempting fallback: extracting content from plain text...');
+    try {
+      // Look for markdown content that might be the answer
+      const extractedMarkdown = text.trim();
+      if (extractedMarkdown.length > 50) {
+        console.log('[AnswerQuestion] Extracted markdown from fallback, length:', extractedMarkdown.length);
+        return {
+          markdown: extractedMarkdown,
+          sources: ['Response extracted from plain text format'],
+        };
+      }
+    } catch (fallbackError) {
+      console.error('[AnswerQuestion] Fallback extraction also failed:', fallbackError);
+    }
+    
     throw new Error(`Gemini did not return valid JSON with markdown field. Response preview: ${text.substring(0, 200)}...`);
   }
 }
