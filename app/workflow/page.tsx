@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
@@ -41,7 +41,7 @@ interface SOP {
   taskName: string;
 }
 
-export default function WorkflowPage() {
+function WorkflowPageContent() {
   const searchParams = useSearchParams();
   const { selectedTask, setSelectedTask, tasks } = useTask();
   const taskName = searchParams?.get('task') || selectedTask;
@@ -1210,3 +1210,17 @@ export default function WorkflowPage() {
   );
 }
 
+export default function WorkflowPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <div className="text-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <WorkflowPageContent />
+    </Suspense>
+  );
+}

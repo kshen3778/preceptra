@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadSOPs, getLatestSOP } from '@/lib/storage';
 
+// Mark this route as dynamic
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/sops?taskName=TaskName
  * Get all SOPs for a task, or the latest one if latest=true
