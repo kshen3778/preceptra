@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listTasks } from '@/lib/storage';
-import { mkdir } from 'fs/promises';
-import path from 'path';
 
 export async function GET() {
   try {
@@ -27,8 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize task name to be filesystem-safe
-    const sanitizedTaskName = taskName.replace(/[^a-zA-Z0-9_-]/g, '_').trim();
+    // Sanitize task name
+    const sanitizedTaskName = taskName.trim();
 
     if (!sanitizedTaskName || sanitizedTaskName.length === 0) {
       return NextResponse.json(
@@ -37,18 +35,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create task directory structure
-    const taskDir = path.join(process.cwd(), 'tasks', sanitizedTaskName);
-    const videoDir = path.join(taskDir, 'video');
-    const transcribeDir = path.join(taskDir, 'transcribe');
-    const sopDir = path.join(taskDir, 'sop');
-
-    // Create directories (recursive will create parent if needed)
-    await mkdir(videoDir, { recursive: true });
-    await mkdir(transcribeDir, { recursive: true });
-    await mkdir(sopDir, { recursive: true });
-
-    console.log(`[Tasks] Created task folder: ${taskDir}`);
+    // Just return the task name without creating folders
+    console.log(`[Tasks] Created task: ${sanitizedTaskName}`);
 
     return NextResponse.json({
       success: true,

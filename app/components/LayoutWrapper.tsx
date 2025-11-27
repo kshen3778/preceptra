@@ -1,35 +1,35 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import Sidebar from './Sidebar';
+import { Suspense } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import TopNav from './TopNav';
 import WorkflowNavTop from './WorkflowNavTop';
 import { TaskProvider } from '../contexts/TaskContext';
 import { TOSBanner } from './TOSModal';
 
-export default function LayoutWrapper({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isLoginPage = pathname === '/login';
   const isTryPage = pathname === '/try';
-  const isWorkflowPage = ['/upload', '/procedure', '/questions'].includes(pathname);
+  const hasTaskParam = searchParams?.get('task');
+  const showTopNavOnTryPage = isTryPage && hasTaskParam;
+  const isWorkflowPage = pathname === '/workflow';
 
   return (
-    <TaskProvider>
-      <div className="flex h-screen overflow-hidden">
-        {!isLoginPage && !isTryPage && <Sidebar />}
-        <main className="flex-1 overflow-y-auto">
-          {!isLoginPage && !isTryPage && (
-            <>
-              <TOSBanner />
-              <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
-                <div className="flex items-center justify-center gap-3 text-sm">
-                  <span className="font-medium text-blue-900">
-                    Free Version: Try the full workflow with sample data
-                  </span>
-                  <span className="text-blue-700">•</span>
+    <div className="flex flex-col h-screen overflow-hidden">
+      {!isLoginPage && (!isTryPage || showTopNavOnTryPage) && <TopNav />}
+      <main className="flex-1 overflow-y-auto">
+        {!isLoginPage && (!isTryPage || showTopNavOnTryPage) && (
+          <>
+            <TOSBanner />
+            <div className="bg-blue-50 border-b border-blue-200 px-4 sm:px-6 py-3">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-sm">
+                <span className="font-medium text-blue-900 text-center">
+                  Free Version: Try the full workflow with sample data
+                </span>
+                <span className="text-blue-700 hidden sm:inline">•</span>
+                <div className="flex items-center gap-2 sm:gap-3">
                   <span className="text-blue-700">Contact us:</span>
                   <a
                     href="https://trymlink.com"
@@ -48,12 +48,32 @@ export default function LayoutWrapper({
                   </a>
                 </div>
               </div>
-            </>
-          )}
-          {isWorkflowPage && <WorkflowNavTop />}
-          {children}
-        </main>
-      </div>
+            </div>
+          </>
+        )}
+        {isWorkflowPage && <WorkflowNavTop />}
+        {children}
+      </main>
+    </div>
+  );
+}
+
+export default function LayoutWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <TaskProvider>
+      <Suspense fallback={
+        <div className="flex flex-col h-screen overflow-hidden">
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </div>
+      }>
+        <LayoutContent>{children}</LayoutContent>
+      </Suspense>
     </TaskProvider>
   );
 }

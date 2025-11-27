@@ -5,19 +5,16 @@ import { useRouter } from 'next/navigation';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Select } from './components/ui/select';
-import { Input } from './components/ui/input';
-import { Upload, BookOpen, MessageSquare, ArrowRight, Plus } from 'lucide-react';
+import { Upload, BookOpen, MessageSquare, ArrowRight } from 'lucide-react';
 import { useTask } from './contexts/TaskContext';
 
 export default function Home() {
   const router = useRouter();
   const { selectedTask, setSelectedTask, tasks } = useTask();
-  const [showCreateTask, setShowCreateTask] = useState(false);
-  const [newTaskName, setNewTaskName] = useState('');
 
   const handleGetStarted = () => {
     if (selectedTask) {
-      router.push('/upload');
+      router.push(`/workflow?task=${encodeURIComponent(selectedTask)}`);
     }
   };
 

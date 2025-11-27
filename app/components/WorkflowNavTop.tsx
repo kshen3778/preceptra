@@ -24,7 +24,7 @@ export default function WorkflowNavTop() {
   if (currentStepIndex === -1) return null;
 
   return (
-    <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+    <div className="sticky top-16 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Left: Previous Button */}
