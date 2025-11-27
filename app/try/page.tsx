@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
@@ -22,7 +22,7 @@ interface QuestionAnswer {
   }[];
 }
 
-export default function TryPage() {
+function TryPageContent() {
   const searchParams = useSearchParams();
   const { setSelectedTask } = useTask();
   const taskName = searchParams?.get('task');
@@ -928,8 +928,39 @@ export default function TryPage() {
                     </div>
                     {sop.notes && (
                       <div className="mt-6 pt-5 border-t border-border">
-                        <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                        <p className="text-muted-foreground">{sop.notes}</p>
+                        <h3 className="text-lg font-semibold mb-4 text-foreground">Notes</h3>
+                        <div className="prose prose-slate max-w-none dark:prose-invert">
+                          <ReactMarkdown
+                            components={{
+                              h1: ({ node, ...props }: any) => (
+                                <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
+                              ),
+                              h2: ({ node, ...props }: any) => (
+                                <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
+                              ),
+                              h3: ({ node, ...props }: any) => (
+                                <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground" {...props} />
+                              ),
+                              p: ({ node, ...props }: any) => (
+                                <p className="mb-3 leading-7 text-foreground" {...props} />
+                              ),
+                              ul: ({ node, ...props }: any) => (
+                                <ul className="mb-3 ml-6 list-disc space-y-1.5 text-foreground" {...props} />
+                              ),
+                              ol: ({ node, ...props }: any) => (
+                                <ol className="mb-3 ml-6 list-decimal space-y-1.5 text-foreground" {...props} />
+                              ),
+                              li: ({ node, ...props }: any) => (
+                                <li className="leading-7" {...props} />
+                              ),
+                              strong: ({ node, ...props }: any) => (
+                                <strong className="font-semibold text-foreground" {...props} />
+                              ),
+                            }}
+                          >
+                            {sop.notes}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     )}
                   </>
@@ -1060,6 +1091,20 @@ export default function TryPage() {
 
       <div className="mb-32"></div>
     </div>
+  );
+}
+
+export default function TryPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    }>
+      <TryPageContent />
+    </Suspense>
   );
 }
 
