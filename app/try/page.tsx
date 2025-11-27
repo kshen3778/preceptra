@@ -639,7 +639,10 @@ export default function TryPage() {
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Analyze</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Record a video, get transcription and SOP, then ask questions
+         Stuck on a fix? Search your team’s real-world expertise in seconds.
+         <br />
+          Get a taste of how it works by recording a video, getting transcription and SOP, then asking questions
+          <br />
         </p>
       </div>
 
@@ -652,6 +655,11 @@ export default function TryPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-border">
+              <p className="text-sm text-foreground leading-relaxed">
+                <strong className="font-semibold">Instructions:</strong> Record yourself doing a task and narrate what you are doing as to teach someone. 
+              </p>
+            </div>
             {!isCameraOpen ? (
               <Button
                 onClick={() => openCamera()}
