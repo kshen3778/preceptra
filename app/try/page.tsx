@@ -651,15 +651,9 @@ export default function TryPage() {
           <CardHeader>
             <CardTitle>Record Video</CardTitle>
             <CardDescription>
-              Start recording to capture your procedure
-            </CardDescription>
+            Record yourself doing a task and narrate what you are doing as to teach someone.            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm text-foreground leading-relaxed">
-                <strong className="font-semibold">Instructions:</strong> Record yourself doing a task and narrate what you are doing as to teach someone. 
-              </p>
-            </div>
             {!isCameraOpen ? (
               <Button
                 onClick={() => openCamera()}
