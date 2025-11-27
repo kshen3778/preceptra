@@ -6,10 +6,22 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X } from 'lucide-react';
+import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X, BookOpen, Lock, Unlock, Video } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 
-type TabType = 'transcription' | 'sop' | 'questions';
+const LOCK_STORAGE_KEY = 'preceptra-upload-locked';
+
+function getLockState(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const stored = localStorage.getItem(LOCK_STORAGE_KEY);
+    return stored === 'true';
+  } catch {
+    return false;
+  }
+}
+
+type TabType = 'videos' | 'sop' | 'questions';
 
 interface QuestionAnswer {
   question: string;
@@ -22,17 +34,36 @@ interface QuestionAnswer {
   }[];
 }
 
-export default function TryPage() {
+interface SOP {
+  markdown: string;
+  notes: string;
+  createdAt: string;
+  taskName: string;
+}
+
+export default function WorkflowPage() {
   const searchParams = useSearchParams();
-  const { setSelectedTask } = useTask();
-  const taskName = searchParams?.get('task');
+  const { selectedTask, setSelectedTask, tasks } = useTask();
+  const taskName = searchParams?.get('task') || selectedTask;
   
   // Set the task in context when task param is present
   useEffect(() => {
-    if (taskName) {
+    if (taskName && taskName !== selectedTask) {
       setSelectedTask(taskName);
     }
-  }, [taskName, setSelectedTask]);
+  }, [taskName, selectedTask, setSelectedTask]);
+
+  // Check if task is a filesystem task (like Cabin Filter Replacement)
+  const isFilesystemTask = (task: string | null): boolean => {
+    if (!task) return false;
+    // Get local tasks from localStorage
+    const localTasks = typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem('preceptra-local-tasks') || '[]') : [];
+    // If task is not in local tasks, it's a filesystem task
+    return !localTasks.includes(task);
+  };
+
+  const isCabinFilterTask = taskName === 'Cabin Filter Replacement';
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -46,25 +77,150 @@ export default function TryPage() {
   const isSwitchingCameraRef = useRef<boolean>(false);
   
   const [processing, setProcessing] = useState(false);
-  const [transcript, setTranscript] = useState<any>(null);
   const [sop, setSop] = useState<{ markdown: string; notes: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('transcription');
+  const [loadingSOP, setLoadingSOP] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('videos');
+  const [isLocked, setIsLocked] = useState(false);
+  const [videos, setVideos] = useState<{ name: string; transcribed: boolean }[]>([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
   
   const [question, setQuestion] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [uploadedMedia, setUploadedMedia] = useState<{
-    type: 'image' | 'video';
-    filename: string;
-    url: string;
-    file: File;
-    base64: string;
-    mimeType: string;
-  }[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<QuestionAnswer[]>([]);
 
+  // Check lock state
+  useEffect(() => {
+    setIsLocked(getLockState());
+    
+    // Listen for storage changes (when lock is toggled in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === LOCK_STORAGE_KEY) {
+        setIsLocked(e.newValue === 'true');
+      }
+    };
+    
+    // Listen for custom event (when lock is toggled in same tab)
+    const handleLockStateChanged = (e: CustomEvent) => {
+      setIsLocked(e.detail);
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('lockStateChanged', handleLockStateChanged as EventListener);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('lockStateChanged', handleLockStateChanged as EventListener);
+    };
+  }, []);
+
+  // Load existing SOP and videos when task changes
+  useEffect(() => {
+    if (taskName) {
+      loadExistingSOP();
+      loadVideos();
+    } else {
+      setSop(null);
+      setVideos([]);
+    }
+  }, [taskName]);
+
+  const loadExistingSOP = async () => {
+    if (!taskName) return;
+    
+    setLoadingSOP(true);
+    try {
+      const response = await fetch(`/api/sops?taskName=${encodeURIComponent(taskName)}&latest=true`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.sop) {
+          setSop({
+            markdown: data.sop.markdown || '',
+            notes: data.sop.notes || '',
+          });
+        } else {
+          setSop(null);
+        }
+      } else {
+        setSop(null);
+      }
+    } catch (error) {
+      console.error('Failed to load SOP:', error);
+      setSop(null);
+    } finally {
+      setLoadingSOP(false);
+    }
+  };
+
+  const regenerateProcedure = async () => {
+    if (!taskName) return;
+    
+    setLoadingSOP(true);
+    try {
+      // Call summarize API to regenerate SOP from existing transcripts
+      const summarizeResponse = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskName }),
+      });
+      
+      if (!summarizeResponse.ok) {
+        const errorData = await summarizeResponse.json();
+        throw new Error(errorData.error || 'Failed to regenerate procedure');
+      }
+      
+      const summarizeData = await summarizeResponse.json();
+      setSop({
+        markdown: summarizeData.markdown || '',
+        notes: summarizeData.notes || '',
+      });
+      
+      // Reload SOP to get the saved version
+      await loadExistingSOP();
+    } catch (error) {
+      console.error('Failed to regenerate procedure:', error);
+      alert(error instanceof Error ? error.message : 'Failed to regenerate procedure. Please try again.');
+    } finally {
+      setLoadingSOP(false);
+    }
+  };
+
+  const loadVideos = async () => {
+    if (!taskName) return;
+    
+    setLoadingVideos(true);
+    try {
+      const response = await fetch(`/api/videos?taskName=${encodeURIComponent(taskName)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setVideos(data.videos || []);
+      }
+    } catch (error) {
+      console.error('Failed to load videos:', error);
+    } finally {
+      setLoadingVideos(false);
+    }
+  };
+
+  const toggleLock = () => {
+    const newLockState = !isLocked;
+    setIsLocked(newLockState);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(LOCK_STORAGE_KEY, newLockState ? 'true' : 'false');
+        window.dispatchEvent(new CustomEvent('lockStateChanged', { detail: newLockState }));
+      } catch (error) {
+        console.error('Failed to save lock state:', error);
+      }
+    }
+  };
+
   const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'environment') => {
+    // Check if uploads are locked
+    if (getLockState()) {
+      alert('Uploads are currently locked. Please unlock uploads in the Videos page to record new videos.');
+      return;
+    }
+
     setIsInitializingCamera(true);
     setIsCameraOpen(true);
 
@@ -218,7 +374,6 @@ export default function TryPage() {
       };
 
       mediaRecorder.onstop = async () => {
-        // If we're switching cameras, don't process the video yet
         if (isSwitchingCameraRef.current) {
           return;
         }
@@ -235,7 +390,6 @@ export default function TryPage() {
           return;
         }
 
-        // Close camera
         if (recordingStream) {
           recordingStream.getTracks().forEach(track => track.stop());
           setRecordingStream(null);
@@ -246,15 +400,10 @@ export default function TryPage() {
         setIsCameraOpen(false);
         setIsRecording(false);
 
-        // Upload and process video
         setProcessing(true);
         try {
-          // Normalize MIME type (remove codecs parameter if present)
           const normalizedMimeType = mimeType.split(';')[0];
-          const fileExtension = normalizedMimeType.includes('webm') ? 'webm' : 'mp4';
           
-          // Step 1: Get presigned URL from server (no file sent, bypasses Vercel limit)
-          console.log('[TryPage] Getting presigned URL for S3 upload...');
           const urlResponse = await fetch('/api/upload-to-s3', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -270,9 +419,7 @@ export default function TryPage() {
           }
 
           const urlData = await urlResponse.json();
-          console.log('[TryPage] Got presigned URL, uploading directly to S3...');
 
-          // Step 2: Upload directly to S3 using presigned URL (bypasses Vercel completely)
           const s3UploadResponse = await fetch(urlData.presignedUrl, {
             method: 'PUT',
             body: blob,
@@ -285,15 +432,13 @@ export default function TryPage() {
             throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
           }
 
-          console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
-
-          // Step 3: Process video using the S3 key
           const processResponse = await fetch('/api/process-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               s3Key: urlData.s3Key,
               mimeType: urlData.mimeType,
+              taskName: taskName || undefined,
             }),
           });
 
@@ -303,9 +448,8 @@ export default function TryPage() {
           }
 
           const data = await processResponse.json();
-          setTranscript(data.transcript);
           setSop(data.sop);
-          setActiveTab('transcription');
+          setActiveTab('sop');
         } catch (error) {
           console.error('Failed to process video:', error);
           alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -326,11 +470,11 @@ export default function TryPage() {
       console.error('Error starting recording:', error);
       alert('Failed to start recording: ' + (error?.message || 'Unknown error'));
     }
-  }, [recordingStream]);
+  }, [recordingStream, taskName]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
-      isSwitchingCameraRef.current = false; // Ensure we process the video
+      isSwitchingCameraRef.current = false;
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
@@ -342,20 +486,15 @@ export default function TryPage() {
     }
 
     try {
-      // Stop current recording (but don't process it)
       isSwitchingCameraRef.current = true;
       mediaRecorderRef.current.stop();
       
-      // Wait a moment for the recorder to stop
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Stop old stream tracks
       recordingStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
 
-      // Switch to opposite camera
       const newFacingMode = cameraFacing === 'user' ? 'environment' : 'user';
       
-      // Get new camera stream
       const constraints = {
         video: {
           facingMode: newFacingMode,
@@ -367,7 +506,6 @@ export default function TryPage() {
 
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      // Update video preview
       if (videoPreviewRef.current) {
         videoPreviewRef.current.srcObject = newStream;
       }
@@ -375,7 +513,6 @@ export default function TryPage() {
       setCameraFacing(newFacingMode);
       setRecordingStream(newStream);
 
-      // Start new recorder with same MIME type
       const newMediaRecorder = new MediaRecorder(newStream, {
         mimeType: currentMimeTypeRef.current
       });
@@ -387,7 +524,6 @@ export default function TryPage() {
       };
 
       newMediaRecorder.onstop = async () => {
-        // Only process if we're actually stopping (not switching again)
         if (isSwitchingCameraRef.current) {
           return;
         }
@@ -404,7 +540,6 @@ export default function TryPage() {
           return;
         }
 
-        // Close camera
         if (newStream) {
           newStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
           setRecordingStream(null);
@@ -415,13 +550,10 @@ export default function TryPage() {
         setIsCameraOpen(false);
         setIsRecording(false);
 
-        // Upload and process video
         setProcessing(true);
         try {
           const normalizedMimeType = currentMimeTypeRef.current.split(';')[0];
           
-          // Step 1: Get presigned URL from server (no file sent, bypasses Vercel limit)
-          console.log('[TryPage] Getting presigned URL for S3 upload...');
           const urlResponse = await fetch('/api/upload-to-s3', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -437,9 +569,7 @@ export default function TryPage() {
           }
 
           const urlData = await urlResponse.json();
-          console.log('[TryPage] Got presigned URL, uploading directly to S3...');
 
-          // Step 2: Upload directly to S3 using presigned URL (bypasses Vercel completely)
           const s3UploadResponse = await fetch(urlData.presignedUrl, {
             method: 'PUT',
             body: blob,
@@ -452,15 +582,13 @@ export default function TryPage() {
             throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
           }
 
-          console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
-
-          // Step 3: Process video using the S3 key
           const processResponse = await fetch('/api/process-video', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               s3Key: urlData.s3Key,
               mimeType: urlData.mimeType,
+              taskName: taskName || undefined,
             }),
           });
 
@@ -470,9 +598,8 @@ export default function TryPage() {
           }
 
           const data = await processResponse.json();
-          setTranscript(data.transcript);
           setSop(data.sop);
-          setActiveTab('transcription');
+          setActiveTab('sop');
         } catch (error) {
           console.error('Failed to process video:', error);
           alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -494,7 +621,7 @@ export default function TryPage() {
       isSwitchingCameraRef.current = false;
       alert('Failed to switch camera: ' + (error?.message || 'Unknown error'));
     }
-  }, [isRecording, recordingStream, cameraFacing]);
+  }, [isRecording, recordingStream, cameraFacing, taskName]);
 
   const closeCamera = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -514,71 +641,9 @@ export default function TryPage() {
     setIsCameraOpen(false);
   }, [isRecording, recordingStream]);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-
-    try {
-      const filePromises = Array.from(files).map(async (file) => {
-        const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        const videoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-
-        if (![...imageTypes, ...videoTypes].includes(file.type)) {
-          alert(`Invalid file type for ${file.name}. Only images and videos are allowed.`);
-          return null;
-        }
-
-        const isVideo = videoTypes.includes(file.type);
-        const maxSize = isVideo ? 500 * 1024 * 1024 : 100 * 1024 * 1024;
-        if (file.size > maxSize) {
-          alert(`File ${file.name} exceeds ${isVideo ? '500MB' : '100MB'} limit`);
-          return null;
-        }
-
-        return new Promise<typeof uploadedMedia[0] | null>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = reader.result as string;
-            resolve({
-              type: videoTypes.includes(file.type) ? 'video' : 'image',
-              filename: file.name,
-              url: base64,
-              file: file as File,
-              base64: base64.split(',')[1],
-              mimeType: file.type,
-            });
-          };
-          reader.onerror = () => {
-            alert(`Failed to read ${file.name}`);
-            resolve(null);
-          };
-          reader.readAsDataURL(file as Blob);
-        });
-      });
-
-      const results = await Promise.all(filePromises);
-      const successfulUploads = results.filter((r: typeof uploadedMedia[0] | null): r is typeof uploadedMedia[0] => r !== null);
-      setUploadedMedia((prev: typeof uploadedMedia) => [...prev, ...successfulUploads]);
-    } catch (error) {
-      console.error('Failed to process files:', error);
-      alert('Failed to process files');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const handleRemoveMedia = (index: number) => {
-    setUploadedMedia((prev: typeof uploadedMedia) => prev.filter((_: typeof uploadedMedia[0], i: number) => i !== index));
-  };
-
   const handleAskQuestion = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!transcript || !question.trim()) return;
+    if (!sop || !question.trim()) return;
 
     setLoading(true);
 
@@ -587,7 +652,7 @@ export default function TryPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transcript,
+          transcript: null, // No transcript in this workflow
           sop,
           question: question.trim(),
         }),
@@ -615,175 +680,39 @@ export default function TryPage() {
     }
   };
 
-  const formatTranscript = (transcript: any) => {
-    if (!transcript) return 'No transcription available.';
-
-    const audio = transcript.audio_transcript || [];
-    const visual = transcript.visual_description || [];
-
-    let output = '## Audio Transcription\n\n';
-    audio.forEach((segment: any) => {
-      if (segment.speech) {
-        output += `**[${segment.start}s - ${segment.end}s]** ${segment.speech}\n\n`;
-      }
-    });
-
-    if (visual.length > 0) {
-      output += '\n## Visual Description\n\n';
-      visual.forEach((segment: any) => {
-        if (segment.visual) {
-          output += `**[${segment.start}s - ${segment.end}s]** ${segment.visual}\n\n`;
-        }
-      });
-    }
-
-    if (transcript.task_summaries && transcript.task_summaries.length > 0) {
-      output += '\n## Task Summaries\n\n';
-      transcript.task_summaries.forEach((summary: any) => {
-        output += `- **${summary.time_range}**: ${summary.summary}\n`;
-      });
-    }
-
-    return output;
-  };
+  if (!taskName) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <Card className="border-2 border-primary/20 bg-primary/5">
+          <CardContent className="py-12">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <BookOpen className="h-8 w-8 text-primary" />
+              </div>
+              <p className="text-xl font-semibold mb-3">Select a Task First</p>
+              <p className="text-muted-foreground mb-2">
+                Choose a task from the top navigation to get started.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
       <div className="mb-6">
-        {taskName && (
-          <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
-            <p className="text-sm font-medium text-primary">
-              Task: <span className="font-semibold">{taskName}</span>
-            </p>
-          </div>
-        )}
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Analyze</h1>
+        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+          <p className="text-sm font-medium text-primary">
+            Task: <span className="font-semibold">{taskName}</span>
+          </p>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Create Procedure</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-         Stuck on a fix? Search your team's real-world expertise in seconds.
-         <br />
-          Get a taste of how it works by recording a video, getting transcription and SOP, then asking questions
-          <br />
+          Record yourself doing a task, generate a procedure, and ask questions
         </p>
       </div>
-
-      {!transcript && !processing && (
-        <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle>Record Video</CardTitle>
-            <CardDescription>
-            Record yourself doing a task and narrate what you are doing as to teach someone.            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!isCameraOpen ? (
-              <Button
-                onClick={() => openCamera()}
-                disabled={isInitializingCamera}
-                className="w-full sm:w-auto"
-                size="lg"
-              >
-                {isInitializingCamera ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Initializing...
-                  </>
-                ) : (
-                  <>
-                    <VideoIcon className="mr-2 h-4 w-4" />
-                    Start Recording
-                  </>
-                )}
-              </Button>
-            ) : (
-              <div className="space-y-4">
-                <div className={`border-2 rounded-lg p-3 sm:p-4 ${
-                  isInitializingCamera
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                    : isRecording
-                    ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
-                    : 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                }`}>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      {isInitializingCamera ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Initializing...</span>
-                        </>
-                      ) : isRecording ? (
-                        <>
-                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-green-600 dark:text-green-400">Ready</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      {!isRecording && (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={startRecording}
-                          className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
-                        >
-                          <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
-                          Start Recording
-                        </Button>
-                      )}
-                      {isRecording && (
-                        <>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={switchCameraDuringRecording}
-                            className="flex-1 sm:flex-none"
-                            title="Switch Camera"
-                          >
-                            <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="ml-2 hidden sm:inline">Switch</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={stopRecording}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                            Stop Recording
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={closeCamera}
-                        className="flex-1 sm:flex-none"
-                      >
-                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="ml-2 hidden sm:inline">Close</span>
-                      </Button>
-                    </div>
-                  </div>
-                  <video
-                    ref={videoPreviewRef}
-                    className="w-full aspect-video rounded-lg bg-black"
-                    autoPlay
-                    muted
-                    playsInline
-                  />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {processing && (
         <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
@@ -792,93 +721,315 @@ export default function TryPage() {
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
               <p className="text-lg font-semibold mb-2">Processing Video</p>
               <p className="text-sm text-muted-foreground">
-                Generating transcription and SOP...
+                Generating procedure...
               </p>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {transcript && !processing && (
+      {!processing && (
         <>
           <div className="mb-4 border-b border-border">
             <nav className="flex space-x-1 overflow-x-auto">
               <button
-                onClick={() => setActiveTab('transcription')}
+                onClick={() => setActiveTab('videos')}
                 className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'transcription'
+                  activeTab === 'videos'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Transcription
+                Videos
               </button>
-              <button
-                onClick={() => setActiveTab('sop')}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'sop'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                SOP
-              </button>
-              <button
-                onClick={() => setActiveTab('questions')}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'questions'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Ask Questions
-              </button>
+              {sop && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('sop')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      (activeTab as TabType) === 'sop'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Procedure
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('questions')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      (activeTab as TabType) === 'questions'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Ask Questions
+                  </button>
+                </>
+              )}
             </nav>
           </div>
 
-          {activeTab === 'transcription' && (
+          {activeTab === 'videos' && (
             <Card>
               <CardHeader>
-                <CardTitle>Transcription</CardTitle>
-                <CardDescription>
-                  Audio and visual transcription of your video
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Videos</CardTitle>
+                    <CardDescription>
+                      Manage videos and upload settings
+                    </CardDescription>
+                  </div>
+                  {isCabinFilterTask ? (
+                    <div className="text-sm font-medium text-orange-600">
+                      LOCKED
+                    </div>
+                  ) : !isFilesystemTask(taskName) ? (
+                    <Button
+                      onClick={() => openCamera()}
+                      disabled={isInitializingCamera}
+                      variant="default"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <VideoIcon className="h-4 w-4" />
+                      <span>Record</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={toggleLock}
+                      variant={isLocked ? 'destructive' : 'default'}
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {isLocked ? (
+                        <>
+                          <Lock className="h-4 w-4" />
+                          <span>LOCKED</span>
+                        </>
+                      ) : (
+                        <>
+                          <Unlock className="h-4 w-4" />
+                          <span>Unlock</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-slate max-w-none dark:prose-invert">
-                  <ReactMarkdown
-                    components={{
-                      h1: ({ node, ...props }: any) => (
-                        <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
-                      ),
-                      h2: ({ node, ...props }: any) => (
-                        <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
-                      ),
-                      p: ({ node, ...props }: any) => (
-                        <p className="mb-3 leading-7 text-foreground" {...props} />
-                      ),
-                      strong: ({ node, ...props }: any) => (
-                        <strong className="font-semibold text-foreground" {...props} />
-                      ),
-                    }}
-                  >
-                    {formatTranscript(transcript)}
-                  </ReactMarkdown>
-                </div>
+                {isCabinFilterTask && (
+                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-sm font-medium text-orange-900">LOCKED</p>
+                    <p className="text-xs text-orange-800 mt-1">Admins can lock tasks to prevent uploads by employees. Please move to Procedure Tab</p>
+                  </div>
+                )}
+                {!isCabinFilterTask && isLocked && (
+                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-sm font-medium text-orange-900">LOCKED</p>
+                    <p className="text-xs text-orange-800 mt-1">Uploads are locked to prevent unwanted additions</p>
+                  </div>
+                )}
+                
+                {!sop && !isCabinFilterTask && (
+                  <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
+                    <CardHeader>
+                      <CardTitle>Record Video {isLocked && !isFilesystemTask(taskName) ? '' : isLocked ? <span className="ml-2 text-sm font-normal text-orange-600">(LOCKED)</span> : ''}</CardTitle>
+                      <CardDescription>
+                        Record yourself doing a task and narrate what you are doing as to teach someone.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {!isCameraOpen ? (
+                        <Button
+                          onClick={() => openCamera()}
+                          disabled={isInitializingCamera || isLocked}
+                          className="w-full sm:w-auto"
+                          size="lg"
+                        >
+                          {isInitializingCamera ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Initializing...
+                            </>
+                          ) : (
+                            <>
+                              <VideoIcon className="mr-2 h-4 w-4" />
+                              Start Recording
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className={`border-2 rounded-lg p-3 sm:p-4 ${
+                            isInitializingCamera
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                              : isRecording
+                              ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                              : 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                          }`}>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                              <div className="flex items-center gap-2">
+                                {isInitializingCamera ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Initializing...</span>
+                                  </>
+                                ) : isRecording ? (
+                                  <>
+                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                    <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <span className="text-sm font-medium text-green-600 dark:text-green-400">Ready</span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="flex gap-2 w-full sm:w-auto">
+                                {!isRecording && (
+                                  <Button
+                                    type="button"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={startRecording}
+                                    className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+                                  >
+                                    <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
+                                    Start Recording
+                                  </Button>
+                                )}
+                                {isRecording && (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={switchCameraDuringRecording}
+                                      className="flex-1 sm:flex-none"
+                                      title="Switch Camera"
+                                    >
+                                      <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
+                                      <span className="ml-2 hidden sm:inline">Switch</span>
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={stopRecording}
+                                      className="flex-1 sm:flex-none"
+                                    >
+                                      <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                      Stop Recording
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={closeCamera}
+                                  className="flex-1 sm:flex-none"
+                                >
+                                  <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  <span className="ml-2 hidden sm:inline">Close</span>
+                                </Button>
+                              </div>
+                            </div>
+                            <video
+                              ref={videoPreviewRef}
+                              className="w-full aspect-video rounded-lg bg-black"
+                              autoPlay
+                              muted
+                              playsInline
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {loadingVideos ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading videos...</p>
+                  </div>
+                ) : videos.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Video className="mx-auto mb-4 h-12 w-12" />
+                    <p>No videos found for this task.</p>
+                    <p className="text-sm mt-2">Record videos to see them here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {videos.map((video) => (
+                      <div
+                        key={video.name}
+                        className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                            <Video className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{video.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {video.transcribed ? 'Transcribed' : 'Not transcribed'}
+                            </p>
+                          </div>
+                        </div>
+                        {video.transcribed && (
+                          <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                            Transcribed
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
 
-          {activeTab === 'sop' && (
+          {(activeTab as TabType) === 'sop' && sop && (
             <Card>
               <CardHeader>
-                <CardTitle>Standard Operating Procedure</CardTitle>
-                <CardDescription>
-                  Generated SOP from your video
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Standard Operating Procedure</CardTitle>
+                    <CardDescription>
+                      Generated procedure from your video
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={regenerateProcedure}
+                    disabled={loadingSOP}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {loadingSOP ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Regenerating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <VideoIcon className="h-4 w-4" />
+                        <span>Regenerate Procedure</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {sop ? (
+                {loadingSOP ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading procedure...</p>
+                  </div>
+                ) : sop ? (
                   <>
                     <div className="prose prose-slate max-w-none dark:prose-invert mb-6">
                       <ReactMarkdown
@@ -920,19 +1071,19 @@ export default function TryPage() {
                     )}
                   </>
                 ) : (
-                  <p className="text-muted-foreground">No SOP available.</p>
+                  <p className="text-muted-foreground">No procedure available. Record a video to generate one.</p>
                 )}
               </CardContent>
             </Card>
           )}
 
-          {activeTab === 'questions' && (
+          {(activeTab as TabType) === 'questions' && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Ask Questions</CardTitle>
                   <CardDescription>
-                    Get answers based on your transcription and SOP
+                    Get answers based on your procedure
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
