@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loadSOPs, getLatestSOP } from '@/lib/storage';
 
+// Mark this route as dynamic
 export const dynamic = 'force-dynamic';
 
 /**
