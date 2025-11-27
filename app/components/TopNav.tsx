@@ -4,21 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { VideoIcon, Video, LogOut, User, ChevronDown, FileText, Menu, X, Plus } from 'lucide-react';
+import { VideoIcon, Video, LogOut, User, ChevronDown, FileText, Menu, X, Home } from 'lucide-react';
 import { Button } from './ui/button';
-import { Select } from './ui/select';
-import { useTask } from '../contexts/TaskContext';
-import CreateTaskModal from './CreateTaskModal';
 
 const navigation: Array<{ name: string; href: string; icon: any; step: number; description: string }> = [];
 
 export default function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { selectedTask, setSelectedTask, tasks } = useTask();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -33,20 +28,35 @@ export default function TopNav() {
         return;
       }
       
+      // Check if click is inside the user menu (button or dropdown)
+      if (userMenuRef.current && userMenuRef.current.contains(target)) {
+        // Check if it's a link or button inside the dropdown
+        const isLinkOrButton = (target as Element).closest('a, button');
+        if (isLinkOrButton && userMenuRef.current.contains(isLinkOrButton)) {
+          // Allow the click to proceed, don't close menu yet
+          return;
+        }
+        return;
+      }
+      
       if (menuRef.current && !menuRef.current.contains(target)) {
         setIsMenuOpen(false);
       }
       if (userMenuRef.current && !userMenuRef.current.contains(target)) {
-        setIsUserMenuOpen(false);
+        // Use setTimeout to allow click handlers to fire first
+        setTimeout(() => {
+          setIsUserMenuOpen(false);
+        }, 0);
       }
     };
 
     if (isMenuOpen || isUserMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      // Use click with a slight delay to allow button clicks to fire first
+      document.addEventListener('click', handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, [isMenuOpen, isUserMenuOpen]);
 
@@ -55,8 +65,13 @@ export default function TopNav() {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  const handleLogout = async () => {
+  const handleLogout = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     try {
+      setIsUserMenuOpen(false);
       await fetch('/api/logout', { method: 'POST' });
       router.push('/login');
       router.refresh();
@@ -77,36 +92,6 @@ export default function TopNav() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2 md:gap-3 lg:gap-4">
-            {/* Create Task Button */}
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setIsCreateTaskModalOpen(true)}
-              className="flex items-center gap-1.5 md:gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden lg:inline">Create Task</span>
-            </Button>
-
-            {/* Task Selector */}
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs font-medium text-muted-foreground whitespace-nowrap hidden lg:inline">
-                Task:
-              </label>
-              <Select
-                value={selectedTask}
-                onChange={(e) => setSelectedTask(e.target.value)}
-                className="w-32 md:w-40 lg:w-48"
-              >
-                <option value="">Select a task...</option>
-                {tasks.map((task) => (
-                  <option key={task} value={task}>
-                    {task}
-                  </option>
-                ))}
-              </Select>
-            </div>
-
             {/* Navigation Links */}
             <div className="flex items-center gap-0.5 md:gap-1">
               {navigation.map((item) => {
@@ -131,6 +116,21 @@ export default function TopNav() {
               })}
             </div>
 
+            {/* Home Button */}
+            <Link
+              href="/"
+              className={cn(
+                'flex items-center gap-1.5 md:gap-2 rounded-md px-2 md:px-3 py-2 text-sm font-medium transition-colors',
+                pathname === '/'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+              title="Home"
+            >
+              <Home className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden lg:inline">Home</span>
+            </Link>
+
             {/* User Menu */}
             <div className="relative" ref={userMenuRef}>
               <Button
@@ -148,21 +148,27 @@ export default function TopNav() {
               </Button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-md shadow-lg overflow-hidden z-50">
+                <div 
+                  className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-md shadow-lg overflow-hidden z-50"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
                   <Link
                     href="/tos"
-                    className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors"
-                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsUserMenuOpen(false);
+                      router.push('/tos');
+                    }}
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Terms of Service
                   </Link>
                   <button
-                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      handleLogout();
-                    }}
+                    type="button"
+                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t cursor-pointer"
+                    onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
@@ -185,21 +191,27 @@ export default function TopNav() {
               </Button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-md shadow-lg overflow-hidden z-50">
+                <div 
+                  className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-md shadow-lg overflow-hidden z-50"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
                   <Link
                     href="/tos"
-                    className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors"
-                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsUserMenuOpen(false);
+                      router.push('/tos');
+                    }}
                   >
                     <FileText className="mr-2 h-4 w-4" />
                     Terms of Service
                   </Link>
                   <button
-                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t"
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      handleLogout();
-                    }}
+                    type="button"
+                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t cursor-pointer"
+                    onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
@@ -241,52 +253,18 @@ export default function TopNav() {
               </Button>
             </div>
             
-            {/* Create Task Button (Mobile) */}
+            {/* Home Link (Mobile) */}
             <div className="px-4 mb-4">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  setIsCreateTaskModalOpen(true);
-                  setIsMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-center gap-2"
+              <Link
+                href="/"
+                className="flex items-center gap-2 rounded-md px-3 py-3 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onClick={() => setIsMenuOpen(false)}
               >
-                <Plus className="h-4 w-4" />
-                <span>Create Task</span>
-              </Button>
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </Link>
             </div>
-
-            {/* Task Selector (Mobile) */}
-            <div className="px-4 mb-4">
-              <label className="block text-xs font-medium text-muted-foreground mb-2">
-                CURRENT TASK
-              </label>
-              <Select
-                value={selectedTask}
-                onChange={(e) => setSelectedTask(e.target.value)}
-                className="w-full"
-              >
-                <option value="">Select a task...</option>
-                {tasks.map((task) => (
-                  <option key={task} value={task}>
-                    {task}
-                  </option>
-                ))}
-              </Select>
-              <div className="mt-2 text-xs">
-                <span className="text-muted-foreground">Want custom tasks? </span>
-                <a
-                  href="https://trymlink.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Contact us
-                </a>
-              </div>
-            </div>
-
+            
             {/* Navigation Links (Mobile) */}
             <div className="px-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 mb-2">
@@ -336,12 +314,6 @@ export default function TopNav() {
           </div>
         )}
       </div>
-      
-      {/* Create Task Modal */}
-      <CreateTaskModal
-        isOpen={isCreateTaskModalOpen}
-        onClose={() => setIsCreateTaskModalOpen(false)}
-      />
     </nav>
   );
 }

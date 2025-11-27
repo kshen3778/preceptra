@@ -700,17 +700,26 @@ export default function WorkflowPage() {
     );
   }
 
+  // Check if current task is a local/demo task
+  const isLocalTask = taskName && !isFilesystemTask(taskName);
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
+      {isLocalTask && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm font-medium text-amber-900">Demo Task - No long term storage</p>
+          <p className="text-xs text-amber-800 mt-1">Task will be deleted upon reload</p>
+        </div>
+      )}
       <div className="mb-6">
         <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
           <p className="text-sm font-medium text-primary">
             Task: <span className="font-semibold">{taskName}</span>
           </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Create Procedure</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Task Knowledge Lake</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Record yourself doing a task, generate a procedure, and ask questions
+          A searchable lake of your team's knowledge, extracted right from uploaded videos.
         </p>
       </div>
 
@@ -821,6 +830,7 @@ export default function WorkflowPage() {
                   <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <p className="text-sm font-medium text-orange-900">LOCKED</p>
                     <p className="text-xs text-orange-800 mt-1">Admins can lock tasks to prevent uploads by employees. Please move to Procedure Tab</p>
+                    <p className="text-xs text-orange-800 mt-1">More videos you add the more accurate it becomes.</p>
                   </div>
                 )}
                 {!isCabinFilterTask && isLocked && (
@@ -835,7 +845,7 @@ export default function WorkflowPage() {
                     <CardHeader>
                       <CardTitle>Record Video {isLocked && !isFilesystemTask(taskName) ? '' : isLocked ? <span className="ml-2 text-sm font-normal text-orange-600">(LOCKED)</span> : ''}</CardTitle>
                       <CardDescription>
-                        Record yourself doing a task and narrate what you are doing as to teach someone.
+                      A searchable lake of your team’s real knowledge, extracted from uploaded videos.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1005,9 +1015,9 @@ export default function WorkflowPage() {
                   <Button
                     onClick={regenerateProcedure}
                     disabled={loadingSOP}
-                    variant="outline"
+                    variant="default"
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary/90"
                   >
                     {loadingSOP ? (
                       <>

@@ -5,12 +5,28 @@ import { useRouter } from 'next/navigation';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Select } from './components/ui/select';
-import { Upload, BookOpen, MessageSquare, ArrowRight } from 'lucide-react';
+import { Upload, BookOpen, MessageSquare, ArrowRight, Plus } from 'lucide-react';
 import { useTask } from './contexts/TaskContext';
+import CreateTaskModal from './components/CreateTaskModal';
 
 export default function Home() {
   const router = useRouter();
   const { selectedTask, setSelectedTask, tasks } = useTask();
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+
+  // Filter out local tasks - only show filesystem tasks
+  const getLocalTasks = (): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem('preceptra-local-tasks');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const localTasks = typeof window !== 'undefined' ? getLocalTasks() : [];
+  const filesystemTasks = tasks.filter(task => !localTasks.includes(task));
 
   const handleGetStarted = () => {
     if (selectedTask) {
@@ -45,7 +61,7 @@ export default function Home() {
               className="w-full"
             >
               <option value="">Choose a task...</option>
-              {tasks.map((task) => (
+              {filesystemTasks.map((task) => (
                 <option key={task} value={task}>
                   {task}
                 </option>
@@ -54,26 +70,15 @@ export default function Home() {
           </div>
 
           <div className="pt-4 border-t">
-            <p className="text-sm text-gray-600 mb-3">
-              Need to create your own custom tasks?
-            </p>
-            <div className="flex items-center gap-3">
-              <a
-                href="https://trymlink.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Visit trymlink.com
-              </a>
-              <span className="text-gray-400">or</span>
-              <a
-                href="mailto:info@trymlink.com?subject=Unlock Custom Tasks&body=I'm interested in creating custom tasks and uploading my own videos to Preceptra."
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Email us
-              </a>
-            </div>
+            <Button
+              onClick={() => setIsCreateTaskModalOpen(true)}
+              variant="outline"
+              size="lg"
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Create Task
+            </Button>
           </div>
 
           <Button
@@ -91,52 +96,54 @@ export default function Home() {
       <div className="mb-8">
         <h2 className="mb-6 text-center text-2xl font-semibold">How It Works</h2>
         <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
-          <Card>
-            <CardHeader>
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
-                1
+          <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg">
+            <CardHeader className="text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
+                <Upload className="h-8 w-8" />
               </div>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
-                Transcribe
+              <CardTitle className="text-xl mb-2">
+                Upload Videos
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Upload videos and automatically generate accurate transcriptions using AI.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
-                2
+          <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg">
+            <CardHeader className="text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
+                <BookOpen className="h-8 w-8" />
               </div>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Create Procedures
+              <CardTitle className="text-xl mb-2">
+                Create Knowledge Lakes
               </CardTitle>
-              <CardDescription>
-                Consolidate multiple transcripts into comprehensive step-by-step procedures.
+              <CardDescription className="text-sm">
+                Build a searchable repository of your company's know-how from video transcripts and procedures.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
-                3
+          <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg">
+            <CardHeader className="text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
+                <MessageSquare className="h-8 w-8" />
               </div>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Ask Questions
+              <CardTitle className="text-xl mb-2">
+                Speed Up Training
               </CardTitle>
-              <CardDescription>
-                Get instant answers from your knowledge base using AI-powered search.
+              <CardDescription className="text-sm">
+                Reduce downtime and accelerate training with instant access to your team's collective knowledge.
               </CardDescription>
             </CardHeader>
           </Card>
         </div>
       </div>
+
+      <CreateTaskModal
+        isOpen={isCreateTaskModalOpen}
+        onClose={() => setIsCreateTaskModalOpen(false)}
+      />
     </div>
   );
 }
