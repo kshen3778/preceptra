@@ -180,6 +180,20 @@ export default function TopNav() {
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-2">
+            {/* Home Button (Mobile) */}
+            <Link
+              href="/"
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium transition-colors',
+                pathname === '/'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              )}
+              title="Home"
+            >
+              <Home className="h-4 w-4" />
+            </Link>
+
             {/* User Menu Button (Mobile) */}
             <div className="relative" ref={userMenuRef}>
               <Button
@@ -253,23 +267,8 @@ export default function TopNav() {
               </Button>
             </div>
             
-            {/* Home Link (Mobile) */}
-            <div className="px-4 mb-4">
-              <Link
-                href="/"
-                className="flex items-center gap-2 rounded-md px-3 py-3 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Home className="h-4 w-4" />
-                <span>Home</span>
-              </Link>
-            </div>
-            
             {/* Navigation Links (Mobile) */}
             <div className="px-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 mb-2">
-                3-Step Workflow
-              </p>
               <div className="space-y-1">
                 {navigation.map((item) => {
                   const isActive = pathname === item.href;
