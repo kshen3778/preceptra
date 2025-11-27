@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import TopNav from './TopNav';
-import WorkflowNavTop from './WorkflowNavTop';
 import { TaskProvider } from '../contexts/TaskContext';
 import { TOSBanner } from './TOSModal';
 
@@ -14,7 +13,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const isTryPage = pathname === '/try';
   const hasTaskParam = searchParams?.get('task');
   const showTopNavOnTryPage = isTryPage && hasTaskParam;
-  const isWorkflowPage = pathname === '/workflow';
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -51,7 +49,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </>
         )}
-        {isWorkflowPage && <WorkflowNavTop />}
         {children}
       </main>
     </div>

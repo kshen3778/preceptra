@@ -47,18 +47,40 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       // Load local tasks from localStorage
       const localTasks = getLocalTasks();
       
+      // Filter out test tasks
+      const filteredLocalTasks = localTasks.filter(
+        task => task.toLowerCase() !== 'test task' && task.toLowerCase() !== 'test2 task' && task.toLowerCase() !== 'test2'
+      );
+      
+      // If we filtered out tasks, update localStorage
+      if (filteredLocalTasks.length !== localTasks.length) {
+        saveLocalTasks(filteredLocalTasks);
+      }
+      
       // Merge and deduplicate tasks
-      const allTasks = Array.from(new Set([...filesystemTasks, ...localTasks]));
+      const allTasks = Array.from(new Set([...filesystemTasks, ...filteredLocalTasks]));
       setTasks(allTasks);
     } catch (error) {
       console.error('Failed to load tasks:', error);
       // Fallback to just local tasks if API fails
       const localTasks = getLocalTasks();
-      setTasks(localTasks);
+      const filteredLocalTasks = localTasks.filter(
+        task => task.toLowerCase() !== 'test task' && task.toLowerCase() !== 'test2 task' && task.toLowerCase() !== 'test2'
+      );
+      if (filteredLocalTasks.length !== localTasks.length) {
+        saveLocalTasks(filteredLocalTasks);
+      }
+      setTasks(filteredLocalTasks);
     }
   };
 
   const addLocalTask = (taskName: string) => {
+    // Don't allow adding test tasks
+    const lowerTaskName = taskName.toLowerCase();
+    if (lowerTaskName === 'test task' || lowerTaskName === 'test2 task' || lowerTaskName === 'test2') {
+      return;
+    }
+    
     const localTasks = getLocalTasks();
     if (!localTasks.includes(taskName)) {
       const updated = [...localTasks, taskName];
@@ -72,6 +94,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Clean up test tasks from localStorage on mount
+    const localTasks = getLocalTasks();
+    const filteredLocalTasks = localTasks.filter(
+      task => task.toLowerCase() !== 'test task' && task.toLowerCase() !== 'test2 task' && task.toLowerCase() !== 'test2'
+    );
+    if (filteredLocalTasks.length !== localTasks.length) {
+      saveLocalTasks(filteredLocalTasks);
+    }
+    
     loadTasks();
   }, []);
 

@@ -34,6 +34,16 @@ export default function TryPage() {
     }
   }, [taskName, setSelectedTask]);
 
+  // Check if current task is a local/demo task
+  const isLocalTask = taskName && typeof window !== 'undefined' ? (() => {
+    try {
+      const localTasks = JSON.parse(localStorage.getItem('preceptra-local-tasks') || '[]');
+      return localTasks.includes(taskName);
+    } catch {
+      return false;
+    }
+  })() : false;
+
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isInitializingCamera, setIsInitializingCamera] = useState(false);
@@ -649,6 +659,12 @@ export default function TryPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
+      {isLocalTask && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm font-medium text-amber-900">Demo Task - No long term storage</p>
+          <p className="text-xs text-amber-800 mt-1">Task will be deleted upon reload</p>
+        </div>
+      )}
       <div className="mb-6">
         {taskName && (
           <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
@@ -659,9 +675,7 @@ export default function TryPage() {
         )}
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Analyze</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-         Stuck on a fix? Search your team's real-world expertise in seconds.
-         <br />
-          Get a taste of how it works by recording a video, getting transcription and SOP, then asking questions
+          Get a taste of how our platform works by recording a video and addind it to the current task.
           <br />
         </p>
       </div>
