@@ -17,17 +17,19 @@ export async function POST(request: NextRequest) {
     // Load all transcripts from Vercel KV
     const transcripts = await loadTranscripts(taskName);
 
-    if (transcripts.length === 0) {
+    // Load the latest SOP if available
+    const latestSOP = await getLatestSOP(taskName);
+    console.log('[RAG] Transcripts loaded:', transcripts.length);
+    console.log('[RAG] Latest SOP loaded:', latestSOP ? 'Yes' : 'No');
+    console.log('[RAG] Media attachments:', media ? media.length : 0);
+
+    // Require either transcripts or SOP to be available
+    if (transcripts.length === 0 && !latestSOP) {
       return NextResponse.json(
-        { error: 'No transcripts found for this task' },
+        { error: 'No transcripts or procedure found for this task' },
         { status: 404 }
       );
     }
-
-    // Load the latest SOP if available
-    const latestSOP = await getLatestSOP(taskName);
-    console.log('[RAG] Latest SOP loaded:', latestSOP ? 'Yes' : 'No');
-    console.log('[RAG] Media attachments:', media ? media.length : 0);
 
     // Answer question using RAG with SOP context and media (base64)
     const result = await answerQuestion(question, transcripts, 5, latestSOP, media);
