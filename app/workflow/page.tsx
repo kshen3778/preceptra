@@ -643,17 +643,17 @@ function WorkflowPageContent() {
 
   const handleAskQuestion = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!sop || !question.trim()) return;
+    if (!taskName || !question.trim()) return;
 
     setLoading(true);
 
     try {
-      const response = await fetch('/api/ask-question', {
+      // Use RAG endpoint which automatically loads transcripts and SOP if they exist
+      const response = await fetch('/api/rag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transcript: null, // No transcript in this workflow
-          sop,
+          taskName,
           question: question.trim(),
         }),
       });
@@ -752,29 +752,27 @@ function WorkflowPageContent() {
                 Videos
               </button>
               {sop && (
-                <>
-                  <button
-                    onClick={() => setActiveTab('sop')}
-                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                      (activeTab as TabType) === 'sop'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Procedure
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('questions')}
-                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                      (activeTab as TabType) === 'questions'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Ask Questions
-                  </button>
-                </>
+                <button
+                  onClick={() => setActiveTab('sop')}
+                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    (activeTab as TabType) === 'sop'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Procedure
+                </button>
               )}
+              <button
+                onClick={() => setActiveTab('questions')}
+                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  (activeTab as TabType) === 'questions'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Ask Questions
+              </button>
             </nav>
           </div>
 
@@ -1093,7 +1091,7 @@ function WorkflowPageContent() {
                 <CardHeader>
                   <CardTitle>Ask Questions</CardTitle>
                   <CardDescription>
-                    Get answers based on your procedure
+                    Get answers based on transcripts and procedure (if available)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
