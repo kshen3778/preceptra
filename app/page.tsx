@@ -39,7 +39,7 @@ export default function Home() {
       <div className="mb-12 text-center">
         <h1 className="mb-4 text-4xl font-bold">Welcome to Preceptra</h1>
         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-          Capture your team's knowledge from video, audio, or text and turn it into a helpful assistant that creates procedures, answers questions, and guides employees when they need it.
+          Capture knowledge from video, audio, or text and build your operational knowledge backbone that creates procedures, answers questions, and guides employees.
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export default function Home() {
                 Capture Knowledge
               </CardTitle>
               <CardDescription className="text-sm">
-                Record or upload video, audio, or text from your team's work. The system captures what's said, what's done, and what's written.
+                Upload video, audio, or text. The system captures what's said, done, and written.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -119,7 +119,7 @@ export default function Home() {
                 Optimize Workflow
               </CardTitle>
               <CardDescription className="text-sm">
-                Analyze captured knowledge to identify bottlenecks, inefficiencies, and opportunities to optimize your workflow and improve how work gets done.
+                Analyze knowledge to identify bottlenecks and optimize workflows.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -133,7 +133,7 @@ export default function Home() {
                 Assist Employees
               </CardTitle>
               <CardDescription className="text-sm">
-                Employees can ask questions and get personalized answers based on their situation and what they need to know.
+                Employees ask questions and get personalized answers when they need help.
               </CardDescription>
             </CardHeader>
           </Card>
