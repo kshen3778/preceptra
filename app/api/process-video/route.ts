@@ -37,16 +37,16 @@ export async function POST(request: NextRequest) {
     s3Key = providedS3Key;
     const baseMimeType = mimeType || 'video/mp4';
 
-    console.log('[ProcessVideo] Fetching video from S3:', s3Key);
+    console.log('[ProcessVideo] Fetching file from S3:', s3Key);
 
     const genAI = getGenAI();
     const modelName = getModelName();
 
     // Fetch file from S3
     const buffer = await getFromS3(providedS3Key);
-    const videoBase64 = buffer.toString('base64');
+    const fileBase64 = buffer.toString('base64');
 
-    console.log('[ProcessVideo] Processing video with Gemini...');
+    console.log('[ProcessVideo] Processing file with Gemini...');
 
     // Step 1: Generate transcription
     const transcribePrompt = await readPrompt('transcribe');
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       transcribeResult = await model.generateContent([
         {
           inlineData: {
-            data: videoBase64,
+            data: fileBase64,
             mimeType: baseMimeType,
           },
         },

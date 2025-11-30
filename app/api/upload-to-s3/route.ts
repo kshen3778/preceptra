@@ -13,12 +13,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    // Validate file type - support video, audio, and text files
+    const allowedTypes = [
+      'video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+      'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a',
+      'text/plain', 'text/markdown', 'text/csv'
+    ];
     const baseMimeType = mimeType.split(';')[0];
     if (!allowedTypes.includes(baseMimeType)) {
       return NextResponse.json(
-        { error: `Invalid file type. Only video files are allowed. Received: ${mimeType}` },
+        { error: `Invalid file type. Only video, audio, and text files are allowed. Received: ${mimeType}` },
         { status: 400 }
       );
     }

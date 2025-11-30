@@ -9,7 +9,7 @@ import { Input } from '../components/ui/input';
 import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X, Upload } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 
-type TabType = 'transcription' | 'sop' | 'questions';
+type TabType = 'sop' | 'questions';
 
 interface QuestionAnswer {
   question: string;
@@ -62,7 +62,7 @@ function TryPageContent() {
   const [processing, setProcessing] = useState(false);
   const [transcript, setTranscript] = useState<any>(null);
   const [sop, setSop] = useState<{ markdown: string; notes: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('transcription');
+  const [activeTab, setActiveTab] = useState<TabType>('sop');
   
   const [question, setQuestion] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -319,8 +319,8 @@ function TryPageContent() {
 
           const data = await processResponse.json();
           setTranscript(data.transcript);
-          setSop(data.sop);
-          setActiveTab('transcription');
+      setSop(data.sop);
+      setActiveTab('sop');
         } catch (error) {
           console.error('Failed to process video:', error);
           alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -486,8 +486,8 @@ function TryPageContent() {
 
           const data = await processResponse.json();
           setTranscript(data.transcript);
-          setSop(data.sop);
-          setActiveTab('transcription');
+      setSop(data.sop);
+      setActiveTab('sop');
         } catch (error) {
           console.error('Failed to process video:', error);
           alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -595,10 +595,14 @@ function TryPageContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
+    // Validate file type - support video, audio, and text
     const videoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
-    if (!videoTypes.includes(file.type)) {
-      alert('Invalid file type. Only video files (MP4, MPEG, MOV, AVI, WebM) are allowed.');
+    const audioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a'];
+    const textTypes = ['text/plain', 'text/markdown', 'text/csv'];
+    const allowedTypes = [...videoTypes, ...audioTypes, ...textTypes];
+    
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Only video, audio, or text files are allowed.');
       if (videoUploadInputRef.current) {
         videoUploadInputRef.current.value = '';
       }
@@ -620,7 +624,7 @@ function TryPageContent() {
       const normalizedMimeType = file.type.split(';')[0];
       
       // Step 1: Get presigned URL from server
-      console.log('[TryPage] Getting presigned URL for video upload...');
+      console.log('[TryPage] Getting presigned URL for file upload...');
       const urlResponse = await fetch('/api/upload-to-s3', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -636,7 +640,7 @@ function TryPageContent() {
       }
 
       const urlData = await urlResponse.json();
-      console.log('[TryPage] Got presigned URL, uploading video to S3...');
+      console.log('[TryPage] Got presigned URL, uploading file to S3...');
 
       // Step 2: Upload directly to S3 using presigned URL
       const s3UploadResponse = await fetch(urlData.presignedUrl, {
@@ -651,9 +655,9 @@ function TryPageContent() {
         throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
       }
 
-      console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
+      console.log('[TryPage] File uploaded to S3, key:', urlData.s3Key);
 
-      // Step 3: Process video using the S3 key
+      // Step 3: Process file using the S3 key
       const processResponse = await fetch('/api/process-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -665,16 +669,16 @@ function TryPageContent() {
 
       if (!processResponse.ok) {
         const error = await processResponse.json();
-        throw new Error(error.details || error.error || 'Failed to process video');
+        throw new Error(error.details || error.error || 'Failed to process file');
       }
 
       const data = await processResponse.json();
-      setTranscript(data.transcript);
+          setTranscript(data.transcript);
       setSop(data.sop);
-      setActiveTab('transcription');
+      setActiveTab('sop');
     } catch (error) {
-      console.error('Failed to upload and process video:', error);
-      alert('Failed to upload and process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('Failed to upload and process file:', error);
+      alert('Failed to upload and process file: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setProcessing(false);
       if (videoUploadInputRef.current) {
@@ -770,18 +774,18 @@ function TryPageContent() {
             </p>
           </div>
         )}
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Analyze</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Capture Knowledge</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Get a taste of how our platform works by recording a video and adding it to the current task.
+          Record or upload content to capture knowledge and add it to the current task.
         </p>
       </div>
 
       {!transcript && !processing && (
         <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
           <CardHeader>
-            <CardTitle>Record or Upload Video</CardTitle>
+            <CardTitle>Record or Upload Content</CardTitle>
             <CardDescription>
-              Record yourself doing a task and narrate what you are doing, or upload an existing video file.
+              Record yourself doing a task and narrate what you are doing, or upload video, audio, or text files.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -820,14 +824,14 @@ function TryPageContent() {
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      Upload Video
+                      Upload Content
                     </>
                   )}
                 </Button>
                 <input
                   ref={videoUploadInputRef}
                   type="file"
-                  accept="video/mp4,video/mpeg,video/quicktime,video/x-msvideo,video/webm"
+                  accept="video/*,audio/*,.txt,.md,.csv"
                   onChange={handleVideoUpload}
                   className="hidden"
                 />
@@ -929,9 +933,9 @@ function TryPageContent() {
           <CardContent className="py-12">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-lg font-semibold mb-2">Processing Video</p>
+              <p className="text-lg font-semibold mb-2">Processing Content</p>
               <p className="text-sm text-muted-foreground">
-                Generating transcription and SOP...
+                Generating transcription and procedural knowledge...
               </p>
             </div>
           </CardContent>
@@ -943,16 +947,6 @@ function TryPageContent() {
           <div className="mb-4 border-b border-border">
             <nav className="flex space-x-1 overflow-x-auto">
               <button
-                onClick={() => setActiveTab('transcription')}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'transcription'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Transcription
-              </button>
-              <button
                 onClick={() => setActiveTab('sop')}
                 className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === 'sop'
@@ -960,7 +954,7 @@ function TryPageContent() {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                SOP
+                Procedure
               </button>
               <button
                 onClick={() => setActiveTab('questions')}
@@ -975,91 +969,83 @@ function TryPageContent() {
             </nav>
           </div>
 
-          {activeTab === 'transcription' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Transcription</CardTitle>
-                <CardDescription>
-                  Audio and visual transcription of your video
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-slate max-w-none dark:prose-invert">
-                  <ReactMarkdown
-                    components={{
-                      h1: ({ node, ...props }: any) => (
-                        <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
-                      ),
-                      h2: ({ node, ...props }: any) => (
-                        <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
-                      ),
-                      p: ({ node, ...props }: any) => (
-                        <p className="mb-3 leading-7 text-foreground" {...props} />
-                      ),
-                      strong: ({ node, ...props }: any) => (
-                        <strong className="font-semibold text-foreground" {...props} />
-                      ),
-                    }}
-                  >
-                    {formatTranscript(transcript)}
-                  </ReactMarkdown>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {activeTab === 'sop' && (
             <Card>
               <CardHeader>
-                <CardTitle>Standard Operating Procedure</CardTitle>
+                <CardTitle>Procedural Knowledge</CardTitle>
                 <CardDescription>
-                  Generated SOP from your video
+                  Generated procedural knowledge from your content
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {sop ? (
-                  <>
-                    <div className="prose prose-slate max-w-none dark:prose-invert mb-6">
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ node, ...props }: any) => (
-                            <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
-                          ),
-                          h2: ({ node, ...props }: any) => (
-                            <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
-                          ),
-                          h3: ({ node, ...props }: any) => (
-                            <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground" {...props} />
-                          ),
-                          p: ({ node, ...props }: any) => (
-                            <p className="mb-3 leading-7 text-foreground" {...props} />
-                          ),
-                          ul: ({ node, ...props }: any) => (
-                            <ul className="mb-3 ml-6 list-disc space-y-1.5 text-foreground" {...props} />
-                          ),
-                          ol: ({ node, ...props }: any) => (
-                            <ol className="mb-3 ml-6 list-decimal space-y-1.5 text-foreground" {...props} />
-                          ),
-                          li: ({ node, ...props }: any) => (
-                            <li className="leading-7" {...props} />
-                          ),
-                          strong: ({ node, ...props }: any) => (
-                            <strong className="font-semibold text-foreground" {...props} />
-                          ),
-                        }}
-                      >
-                        {sop.markdown}
-                      </ReactMarkdown>
-                    </div>
-                    {sop.notes && (
-                      <div className="mt-6 pt-5 border-t border-border">
-                        <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                        <p className="text-muted-foreground">{sop.notes}</p>
+                  sop.markdown && (sop.markdown.toLowerCase().includes('cannot generate') || sop.markdown.toLowerCase().includes('content saved') || sop.markdown.toLowerCase().includes('knowledge added')) ? (
+                    <div className="p-6 bg-muted/50 rounded-lg border border-border">
+                      <div className="prose prose-slate max-w-none dark:prose-invert">
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ node, ...props }: any) => (
+                              <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
+                            ),
+                            h2: ({ node, ...props }: any) => (
+                              <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
+                            ),
+                            p: ({ node, ...props }: any) => (
+                              <p className="mb-3 leading-7 text-foreground" {...props} />
+                            ),
+                            strong: ({ node, ...props }: any) => (
+                              <strong className="font-semibold text-foreground" {...props} />
+                            ),
+                          }}
+                        >
+                          {sop.markdown}
+                        </ReactMarkdown>
                       </div>
-                    )}
-                  </>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="prose prose-slate max-w-none dark:prose-invert mb-6">
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ node, ...props }: any) => (
+                              <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
+                            ),
+                            h2: ({ node, ...props }: any) => (
+                              <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
+                            ),
+                            h3: ({ node, ...props }: any) => (
+                              <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground" {...props} />
+                            ),
+                            p: ({ node, ...props }: any) => (
+                              <p className="mb-3 leading-7 text-foreground" {...props} />
+                            ),
+                            ul: ({ node, ...props }: any) => (
+                              <ul className="mb-3 ml-6 list-disc space-y-1.5 text-foreground" {...props} />
+                            ),
+                            ol: ({ node, ...props }: any) => (
+                              <ol className="mb-3 ml-6 list-decimal space-y-1.5 text-foreground" {...props} />
+                            ),
+                            li: ({ node, ...props }: any) => (
+                              <li className="leading-7" {...props} />
+                            ),
+                            strong: ({ node, ...props }: any) => (
+                              <strong className="font-semibold text-foreground" {...props} />
+                            ),
+                          }}
+                        >
+                          {sop.markdown}
+                        </ReactMarkdown>
+                      </div>
+                      {sop.notes && (
+                        <div className="mt-6 pt-5 border-t border-border">
+                          <h3 className="text-lg font-semibold mb-2">Notes</h3>
+                          <p className="text-muted-foreground">{sop.notes}</p>
+                        </div>
+                      )}
+                    </>
+                  )
                 ) : (
-                  <p className="text-muted-foreground">No SOP available.</p>
+                  <p className="text-muted-foreground">No procedural knowledge available.</p>
                 )}
               </CardContent>
             </Card>
@@ -1071,7 +1057,7 @@ function TryPageContent() {
                 <CardHeader>
                   <CardTitle>Ask Questions</CardTitle>
                   <CardDescription>
-                    Get answers based on your transcription and SOP
+                    Get answers based on your transcription and procedural knowledge
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
