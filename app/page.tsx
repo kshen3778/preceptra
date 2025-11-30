@@ -37,9 +37,12 @@ export default function Home() {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="mb-12 text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Preceptra</h1>
+        <h1 className="mb-4 text-4xl font-bold">Capture Your Knowledge. Train For Tomorrow.</h1>
         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-          Capture knowledge from video, audio, or text and build your operational knowledge backbone that creates procedures, answers questions, and guides employees.
+          Most operational knowledge is undocumented, making training slow and inconsistent. Preceptra by MLink captures hands-on expertise as it happens and turns it into clear, personalized training and guidance.
+        </p>
+        <p className="text-lg text-muted-foreground max-w-3xl mx-auto mt-4">
+          As industries move toward AI, infrastructure still depends on skilled people. Preceptra helps teams ramp faster, avoid mistakes, and preserve the knowledge they rely on.
         </p>
       </div>
 
@@ -102,10 +105,10 @@ export default function Home() {
                 <Upload className="h-8 w-8" />
               </div>
               <CardTitle className="text-xl mb-2">
-                Capture Knowledge
+                Capture Expertise
               </CardTitle>
               <CardDescription className="text-sm">
-                Upload video, audio, or text. The system captures what's said, done, and written.
+                Record hands-on knowledge as it happens from video, audio, or text.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -119,7 +122,7 @@ export default function Home() {
                 Optimize Workflow
               </CardTitle>
               <CardDescription className="text-sm">
-                Analyze knowledge to identify bottlenecks and optimize workflows.
+                Analyze individual skills and workforce pitfalls to identify bottlenecks and optimize workflows.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -130,10 +133,10 @@ export default function Home() {
                 <MessageSquare className="h-8 w-8" />
               </div>
               <CardTitle className="text-xl mb-2">
-                Assist Employees
+                Ramp Faster
               </CardTitle>
               <CardDescription className="text-sm">
-                Employees ask questions and get personalized answers when they need help.
+                Help teams learn faster, avoid mistakes, and access knowledge when they need it.
               </CardDescription>
             </CardHeader>
           </Card>

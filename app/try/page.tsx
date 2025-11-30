@@ -9,7 +9,7 @@ import { Input } from '../components/ui/input';
 import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X, Upload } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 
-type TabType = 'sop' | 'questions';
+type TabType = 'knowledge' | 'sop' | 'questions' | 'tribalFeedback';
 
 interface QuestionAnswer {
   question: string;
@@ -62,7 +62,14 @@ function TryPageContent() {
   const [processing, setProcessing] = useState(false);
   const [transcript, setTranscript] = useState<any>(null);
   const [sop, setSop] = useState<{ markdown: string; notes: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('sop');
+  const [activeTab, setActiveTab] = useState<TabType>('knowledge');
+
+  // Ensure we're not on knowledge tab when transcript exists
+  useEffect(() => {
+    if (transcript && activeTab === 'knowledge') {
+      setActiveTab('sop');
+    }
+  }, [transcript, activeTab]);
   
   const [question, setQuestion] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -78,6 +85,10 @@ function TryPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoUploadInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<QuestionAnswer[]>([]);
+  
+  const [processingFeedback, setProcessingFeedback] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const feedbackFileInputRef = useRef<HTMLInputElement>(null);
 
   const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'environment') => {
     setIsInitializingCamera(true);
@@ -261,12 +272,18 @@ function TryPageContent() {
         setIsCameraOpen(false);
         setIsRecording(false);
 
-        // Upload and process video
+        // Check if we're in feedback mode
+        const isFeedbackMode = activeTab === 'tribalFeedback';
+
+        if (isFeedbackMode) {
+          setProcessingFeedback(true);
+        } else {
         setProcessing(true);
+        }
+
         try {
           // Normalize MIME type (remove codecs parameter if present)
           const normalizedMimeType = mimeType.split(';')[0];
-          const fileExtension = normalizedMimeType.includes('webm') ? 'webm' : 'mp4';
           
           // Step 1: Get presigned URL from server (no file sent, bypasses Vercel limit)
           console.log('[TryPage] Getting presigned URL for S3 upload...');
@@ -302,6 +319,28 @@ function TryPageContent() {
 
           console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
 
+          if (isFeedbackMode) {
+            // Process for feedback
+            const feedbackResponse = await fetch('/api/tribal-feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                s3Key: urlData.s3Key,
+                mimeType: urlData.mimeType,
+                taskName: taskName || undefined,
+                transcript: transcript || undefined,
+                sop: sop || undefined,
+              }),
+            });
+
+            if (!feedbackResponse.ok) {
+              const error = await feedbackResponse.json();
+              throw new Error(error.details || error.error || 'Failed to get feedback');
+            }
+
+            const feedbackData = await feedbackResponse.json();
+            setFeedback(feedbackData.feedback);
+          } else {
           // Step 3: Process video using the S3 key
           const processResponse = await fetch('/api/process-video', {
             method: 'POST',
@@ -319,13 +358,22 @@ function TryPageContent() {
 
           const data = await processResponse.json();
           setTranscript(data.transcript);
-      setSop(data.sop);
-      setActiveTab('sop');
+          setSop(data.sop);
+          // Always switch to sop tab after content is processed
+          setActiveTab('sop');
+          }
         } catch (error) {
           console.error('Failed to process video:', error);
-          alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          const errorMessage = isFeedbackMode 
+            ? 'Failed to get feedback: ' + (error instanceof Error ? error.message : 'Unknown error')
+            : 'Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error');
+          alert(errorMessage);
         } finally {
-          setProcessing(false);
+          if (isFeedbackMode) {
+            setProcessingFeedback(false);
+          } else {
+            setProcessing(false);
+          }
         }
       };
 
@@ -341,7 +389,7 @@ function TryPageContent() {
       console.error('Error starting recording:', error);
       alert('Failed to start recording: ' + (error?.message || 'Unknown error'));
     }
-  }, [recordingStream]);
+  }, [recordingStream, activeTab, taskName]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -430,8 +478,15 @@ function TryPageContent() {
         setIsCameraOpen(false);
         setIsRecording(false);
 
-        // Upload and process video
+        // Check if we're in feedback mode
+        const isFeedbackMode = activeTab === 'tribalFeedback';
+
+        if (isFeedbackMode) {
+          setProcessingFeedback(true);
+        } else {
         setProcessing(true);
+        }
+
         try {
           const normalizedMimeType = currentMimeTypeRef.current.split(';')[0];
           
@@ -469,6 +524,28 @@ function TryPageContent() {
 
           console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
 
+          if (isFeedbackMode) {
+            // Process for feedback
+            const feedbackResponse = await fetch('/api/tribal-feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                s3Key: urlData.s3Key,
+                mimeType: urlData.mimeType,
+                taskName: taskName || undefined,
+                transcript: transcript || undefined,
+                sop: sop || undefined,
+              }),
+            });
+
+            if (!feedbackResponse.ok) {
+              const error = await feedbackResponse.json();
+              throw new Error(error.details || error.error || 'Failed to get feedback');
+            }
+
+            const feedbackData = await feedbackResponse.json();
+            setFeedback(feedbackData.feedback);
+          } else {
           // Step 3: Process video using the S3 key
           const processResponse = await fetch('/api/process-video', {
             method: 'POST',
@@ -486,13 +563,22 @@ function TryPageContent() {
 
           const data = await processResponse.json();
           setTranscript(data.transcript);
-      setSop(data.sop);
-      setActiveTab('sop');
+          setSop(data.sop);
+          // Always switch to sop tab after content is processed
+          setActiveTab('sop');
+          }
         } catch (error) {
           console.error('Failed to process video:', error);
-          alert('Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
+          const errorMessage = isFeedbackMode 
+            ? 'Failed to get feedback: ' + (error instanceof Error ? error.message : 'Unknown error')
+            : 'Failed to process video: ' + (error instanceof Error ? error.message : 'Unknown error');
+          alert(errorMessage);
         } finally {
-          setProcessing(false);
+          if (isFeedbackMode) {
+            setProcessingFeedback(false);
+          } else {
+            setProcessing(false);
+          }
         }
       };
 
@@ -509,7 +595,7 @@ function TryPageContent() {
       isSwitchingCameraRef.current = false;
       alert('Failed to switch camera: ' + (error?.message || 'Unknown error'));
     }
-  }, [isRecording, recordingStream, cameraFacing]);
+  }, [isRecording, recordingStream, cameraFacing, activeTab, taskName]);
 
   const closeCamera = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -673,9 +759,12 @@ function TryPageContent() {
       }
 
       const data = await processResponse.json();
-          setTranscript(data.transcript);
+      setTranscript(data.transcript);
       setSop(data.sop);
-      setActiveTab('sop');
+      // Switch to sop tab after content is processed if we were on knowledge tab
+      if (activeTab === 'knowledge') {
+        setActiveTab('sop');
+      }
     } catch (error) {
       console.error('Failed to upload and process file:', error);
       alert('Failed to upload and process file: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -780,196 +869,215 @@ function TryPageContent() {
         </p>
       </div>
 
-      {!transcript && !processing && (
-        <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle>Record or Upload Content</CardTitle>
-            <CardDescription>
-              Record yourself doing a task and narrate what you are doing, or upload video, audio, or text files.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!isCameraOpen ? (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => openCamera()}
-                  disabled={isInitializingCamera || processing}
-                  className="w-full sm:w-auto"
-                  size="lg"
-                >
-                  {isInitializingCamera ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Initializing...
-                    </>
-                  ) : (
-                    <>
-                      <VideoIcon className="mr-2 h-4 w-4" />
-                      Record Video
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => videoUploadInputRef.current?.click()}
-                  disabled={processing}
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  size="lg"
-                >
-                  {processing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Content
-                    </>
-                  )}
-                </Button>
-                <input
-                  ref={videoUploadInputRef}
-                  type="file"
-                  accept="video/*,audio/*,.txt,.md,.csv"
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className={`border-2 rounded-lg p-3 sm:p-4 ${
-                  isInitializingCamera
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                    : isRecording
-                    ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
-                    : 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                }`}>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      {isInitializingCamera ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Initializing...</span>
-                        </>
-                      ) : isRecording ? (
-                        <>
-                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                          <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                          <span className="text-sm font-medium text-green-600 dark:text-green-400">Ready</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      {!isRecording && (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={startRecording}
-                          className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
-                        >
-                          <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
-                          Start Recording
-                        </Button>
-                      )}
-                      {isRecording && (
-                        <>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={switchCameraDuringRecording}
-                            className="flex-1 sm:flex-none"
-                            title="Switch Camera"
-                          >
-                            <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="ml-2 hidden sm:inline">Switch</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={stopRecording}
-                            className="flex-1 sm:flex-none"
-                          >
-                            <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                            Stop Recording
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={closeCamera}
-                        className="flex-1 sm:flex-none"
-                      >
-                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                        <span className="ml-2 hidden sm:inline">Close</span>
-                      </Button>
-                    </div>
-                  </div>
-                  <video
-                    ref={videoPreviewRef}
-                    className="w-full aspect-video rounded-lg bg-black"
-                    autoPlay
-                    muted
-                    playsInline
-                  />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
-      {processing && (
+      {(processing || processingFeedback) && (
         <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
           <CardContent className="py-12">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-lg font-semibold mb-2">Processing Content</p>
+              <p className="text-lg font-semibold mb-2">
+                {processingFeedback ? 'Analyzing Your Performance' : 'Processing Content'}
+              </p>
               <p className="text-sm text-muted-foreground">
-                Generating transcription and procedural knowledge...
+                {processingFeedback 
+                  ? 'Comparing your video against expert knowledge...'
+                  : 'Generating transcription and procedural knowledge...'}
               </p>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {transcript && !processing && (
+      {!processing && !processingFeedback && (
         <>
-          <div className="mb-4 border-b border-border">
-            <nav className="flex space-x-1 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('sop')}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'sop'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Procedure
-              </button>
-              <button
-                onClick={() => setActiveTab('questions')}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'questions'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Ask Questions
-              </button>
-            </nav>
-          </div>
+          {!transcript ? (
+            <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle>Record or Upload Content</CardTitle>
+                <CardDescription>
+                  Record yourself doing a task and narrate what you are doing, or upload video, audio, or text files.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!isCameraOpen ? (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={() => openCamera()}
+                      disabled={isInitializingCamera || processing}
+                      className="w-full sm:w-auto"
+                      size="lg"
+                    >
+                      {isInitializingCamera ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Initializing...
+                        </>
+                      ) : (
+                        <>
+                          <VideoIcon className="mr-2 h-4 w-4" />
+                          Record Video
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => videoUploadInputRef.current?.click()}
+                      disabled={processing}
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      size="lg"
+                    >
+                      {processing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Content
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      ref={videoUploadInputRef}
+                      type="file"
+                      accept="video/*,audio/*,.txt,.md,.csv"
+                      onChange={handleVideoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className={`border-2 rounded-lg p-3 sm:p-4 ${
+                      isInitializingCamera
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                        : isRecording
+                        ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                        : 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                    }`}>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          {isInitializingCamera ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Initializing...</span>
+                            </>
+                          ) : isRecording ? (
+                            <>
+                              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                              <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-green-600 dark:text-green-400">Ready</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          {!isRecording && (
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              onClick={startRecording}
+                              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+                            >
+                              <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
+                              Start Recording
+                            </Button>
+                          )}
+                          {isRecording && (
+                            <>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={switchCameraDuringRecording}
+                                className="flex-1 sm:flex-none"
+                                title="Switch Camera"
+                              >
+                                <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <span className="ml-2 hidden sm:inline">Switch</span>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={stopRecording}
+                                className="flex-1 sm:flex-none"
+                              >
+                                <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                Stop Recording
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={closeCamera}
+                            className="flex-1 sm:flex-none"
+                          >
+                            <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="ml-2 hidden sm:inline">Close</span>
+                          </Button>
+                        </div>
+                      </div>
+                      <video
+                        ref={videoPreviewRef}
+                        className="w-full aspect-video rounded-lg bg-black"
+                        autoPlay
+                        muted
+                        playsInline
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : transcript ? (
+            <>
+              <div className="mb-4 border-b border-border">
+                <nav className="flex space-x-1 overflow-x-auto">
+                  {sop && (
+                    <button
+                      onClick={() => setActiveTab('sop')}
+                      className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                        activeTab === 'sop'
+                          ? 'border-primary text-primary'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Procedure
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setActiveTab('questions')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      activeTab === 'questions'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Ask Questions
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('tribalFeedback')}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      activeTab === 'tribalFeedback'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Get Tribal Feedback
+                  </button>
+                </nav>
+              </div>
+            </>
+          ) : null}
 
-          {activeTab === 'sop' && (
+          {activeTab === 'sop' && transcript && sop && (
             <Card>
               <CardHeader>
                 <CardTitle>Procedural Knowledge</CardTitle>
@@ -1051,7 +1159,7 @@ function TryPageContent() {
             </Card>
           )}
 
-          {activeTab === 'questions' && (
+          {activeTab === 'questions' && transcript && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -1164,6 +1272,273 @@ function TryPageContent() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'tribalFeedback' && transcript && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Get Tribal Feedback</CardTitle>
+                  <CardDescription>
+                    Record or upload a video of yourself performing the task to get feedback based on expert knowledge
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {processingFeedback ? (
+                    <div className="text-center py-12">
+                      <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+                      <p className="text-lg font-semibold mb-2">Analyzing Your Performance</p>
+                      <p className="text-sm text-muted-foreground">
+                        Comparing your video against expert knowledge...
+                      </p>
+                    </div>
+                  ) : feedback ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-semibold">Feedback</h3>
+                        <Button
+                          onClick={() => {
+                            setFeedback(null);
+                            if (feedbackFileInputRef.current) {
+                              feedbackFileInputRef.current.value = '';
+                            }
+                          }}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Upload Another
+                        </Button>
+                      </div>
+                      <div className="prose prose-slate max-w-none dark:prose-invert">
+                        <ReactMarkdown
+                          components={{
+                            h1: ({ node, ...props }: any) => (
+                              <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
+                            ),
+                            h2: ({ node, ...props }: any) => (
+                              <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
+                            ),
+                            h3: ({ node, ...props }: any) => (
+                              <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground" {...props} />
+                            ),
+                            p: ({ node, ...props }: any) => (
+                              <p className="mb-3 leading-7 text-foreground" {...props} />
+                            ),
+                            ul: ({ node, ...props }: any) => (
+                              <ul className="mb-3 ml-6 list-disc space-y-1.5 text-foreground" {...props} />
+                            ),
+                            ol: ({ node, ...props }: any) => (
+                              <ol className="mb-3 ml-6 list-decimal space-y-1.5 text-foreground" {...props} />
+                            ),
+                            li: ({ node, ...props }: any) => (
+                              <li className="leading-7" {...props} />
+                            ),
+                            strong: ({ node, ...props }: any) => (
+                              <strong className="font-semibold text-foreground" {...props} />
+                            ),
+                          }}
+                        >
+                          {feedback}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ) : !isCameraOpen ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Button
+                          onClick={() => openCamera()}
+                          disabled={isInitializingCamera}
+                          className="flex-1"
+                          size="lg"
+                        >
+                          {isInitializingCamera ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Initializing...
+                            </>
+                          ) : (
+                            <>
+                              <VideoIcon className="mr-2 h-4 w-4" />
+                              Record Video
+                            </>
+                          )}
+                        </Button>
+                        <input
+                          ref={feedbackFileInputRef}
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !taskName) return;
+
+                            if (file.size > 500 * 1024 * 1024) {
+                              alert('File exceeds 500MB limit');
+                              return;
+                            }
+
+                            setProcessingFeedback(true);
+                            try {
+                              const normalizedMimeType = file.type || 'video/mp4';
+                              
+                              const urlResponse = await fetch('/api/upload-to-s3', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  mimeType: normalizedMimeType,
+                                  fileSize: file.size,
+                                }),
+                              });
+
+                              if (!urlResponse.ok) {
+                                const error = await urlResponse.json();
+                                throw new Error(error.details || error.error || 'Failed to get upload URL');
+                              }
+
+                              const urlData = await urlResponse.json();
+
+                              const s3UploadResponse = await fetch(urlData.presignedUrl, {
+                                method: 'PUT',
+                                body: file,
+                                headers: {
+                                  'Content-Type': normalizedMimeType,
+                                },
+                              });
+
+                              if (!s3UploadResponse.ok) {
+                                throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
+                              }
+
+                              const feedbackResponse = await fetch('/api/tribal-feedback', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  s3Key: urlData.s3Key,
+                                  mimeType: urlData.mimeType,
+                                  taskName,
+                                }),
+                              });
+
+                              if (!feedbackResponse.ok) {
+                                const error = await feedbackResponse.json();
+                                throw new Error(error.details || error.error || 'Failed to get feedback');
+                              }
+
+                              const data = await feedbackResponse.json();
+                              setFeedback(data.feedback);
+                            } catch (error) {
+                              console.error('Failed to get feedback:', error);
+                              alert('Failed to get feedback: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                            } finally {
+                              setProcessingFeedback(false);
+                              if (feedbackFileInputRef.current) {
+                                feedbackFileInputRef.current.value = '';
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          onClick={() => feedbackFileInputRef.current?.click()}
+                          variant="outline"
+                          className="flex-1"
+                          size="lg"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Video
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className={`border-2 rounded-lg p-3 sm:p-4 ${
+                        isInitializingCamera
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                          : isRecording
+                          ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                          : 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                      }`}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            {isInitializingCamera ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Initializing...</span>
+                              </>
+                            ) : isRecording ? (
+                              <>
+                                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                                <span className="text-sm font-medium text-red-600 dark:text-red-400">Recording...</span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-green-600 dark:text-green-400">Ready</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            {!isRecording && (
+                              <Button
+                                type="button"
+                                variant="default"
+                                size="sm"
+                                onClick={startRecording}
+                                className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+                              >
+                                <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
+                                Start Recording
+                              </Button>
+                            )}
+                            {isRecording && (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={switchCameraDuringRecording}
+                                  className="flex-1 sm:flex-none"
+                                  title="Switch Camera"
+                                >
+                                  <SwitchCamera className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  <span className="ml-2 hidden sm:inline">Switch</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={stopRecording}
+                                  className="flex-1 sm:flex-none"
+                                >
+                                  <Square className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                  Stop Recording
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={closeCamera}
+                              className="flex-1 sm:flex-none"
+                            >
+                              <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="ml-2 hidden sm:inline">Close</span>
+                            </Button>
+                          </div>
+                        </div>
+                        <video
+                          ref={videoPreviewRef}
+                          className="w-full aspect-video rounded-lg bg-black"
+                          autoPlay
+                          muted
+                          playsInline
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </>
