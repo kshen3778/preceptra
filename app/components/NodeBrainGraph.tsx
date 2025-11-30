@@ -106,7 +106,7 @@ export default function NodeBrainGraph() {
           <div className="flex-1">
             <h3 className="text-base sm:text-lg font-semibold mb-1">Knowledge Graph Visualization</h3>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Interactive 3D visualization of your task knowledge structure. All nodes and edges are visible by default.
+              Interactive 3D visualization of your task knowledge structure.
             </p>
           </div>
           <button

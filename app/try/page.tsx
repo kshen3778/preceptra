@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X } from 'lucide-react';
+import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X, Upload } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
 
 type TabType = 'transcription' | 'sop' | 'questions';
@@ -34,15 +34,19 @@ function TryPageContent() {
     }
   }, [taskName, setSelectedTask]);
 
-  // Check if current task is a local/demo task
-  const isLocalTask = taskName && typeof window !== 'undefined' ? (() => {
-    try {
-      const localTasks = JSON.parse(localStorage.getItem('preceptra-local-tasks') || '[]');
-      return localTasks.includes(taskName);
-    } catch {
-      return false;
+  // Check if current task is a local/demo task (client-side only to avoid hydration issues)
+  const [isLocalTask, setIsLocalTask] = useState(false);
+  
+  useEffect(() => {
+    if (taskName && typeof window !== 'undefined') {
+      try {
+        const localTasks = JSON.parse(localStorage.getItem('preceptra-local-tasks') || '[]');
+        setIsLocalTask(localTasks.includes(taskName));
+      } catch {
+        setIsLocalTask(false);
+      }
     }
-  })() : false;
+  }, [taskName]);
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -72,6 +76,7 @@ function TryPageContent() {
   }[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoUploadInputRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<QuestionAnswer[]>([]);
 
   const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'environment') => {
@@ -586,6 +591,98 @@ function TryPageContent() {
     setUploadedMedia((prev: typeof uploadedMedia) => prev.filter((_: typeof uploadedMedia[0], i: number) => i !== index));
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const videoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    if (!videoTypes.includes(file.type)) {
+      alert('Invalid file type. Only video files (MP4, MPEG, MOV, AVI, WebM) are allowed.');
+      if (videoUploadInputRef.current) {
+        videoUploadInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Validate file size (2GB max for Gemini)
+    const maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+    if (file.size > maxSize) {
+      alert('File size exceeds 2GB limit');
+      if (videoUploadInputRef.current) {
+        videoUploadInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const normalizedMimeType = file.type.split(';')[0];
+      
+      // Step 1: Get presigned URL from server
+      console.log('[TryPage] Getting presigned URL for video upload...');
+      const urlResponse = await fetch('/api/upload-to-s3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mimeType: normalizedMimeType,
+          fileSize: file.size,
+        }),
+      });
+
+      if (!urlResponse.ok) {
+        const error = await urlResponse.json();
+        throw new Error(error.details || error.error || 'Failed to get upload URL');
+      }
+
+      const urlData = await urlResponse.json();
+      console.log('[TryPage] Got presigned URL, uploading video to S3...');
+
+      // Step 2: Upload directly to S3 using presigned URL
+      const s3UploadResponse = await fetch(urlData.presignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': normalizedMimeType,
+        },
+      });
+
+      if (!s3UploadResponse.ok) {
+        throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
+      }
+
+      console.log('[TryPage] Video uploaded to S3, key:', urlData.s3Key);
+
+      // Step 3: Process video using the S3 key
+      const processResponse = await fetch('/api/process-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          s3Key: urlData.s3Key,
+          mimeType: urlData.mimeType,
+        }),
+      });
+
+      if (!processResponse.ok) {
+        const error = await processResponse.json();
+        throw new Error(error.details || error.error || 'Failed to process video');
+      }
+
+      const data = await processResponse.json();
+      setTranscript(data.transcript);
+      setSop(data.sop);
+      setActiveTab('transcription');
+    } catch (error) {
+      console.error('Failed to upload and process video:', error);
+      alert('Failed to upload and process video: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setProcessing(false);
+      if (videoUploadInputRef.current) {
+        videoUploadInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleAskQuestion = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!transcript || !question.trim()) return;
@@ -675,38 +772,66 @@ function TryPageContent() {
         )}
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Record & Analyze</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Get a taste of how our platform works by recording a video and addind it to the current task.
-          <br />
+          Get a taste of how our platform works by recording a video and adding it to the current task.
         </p>
       </div>
 
       {!transcript && !processing && (
         <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
           <CardHeader>
-            <CardTitle>Record Video</CardTitle>
+            <CardTitle>Record or Upload Video</CardTitle>
             <CardDescription>
-            Record yourself doing a task and narrate what you are doing as to teach someone.            </CardDescription>
+              Record yourself doing a task and narrate what you are doing, or upload an existing video file.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {!isCameraOpen ? (
-              <Button
-                onClick={() => openCamera()}
-                disabled={isInitializingCamera}
-                className="w-full sm:w-auto"
-                size="lg"
-              >
-                {isInitializingCamera ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Initializing...
-                  </>
-                ) : (
-                  <>
-                    <VideoIcon className="mr-2 h-4 w-4" />
-                    Start Recording
-                  </>
-                )}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => openCamera()}
+                  disabled={isInitializingCamera || processing}
+                  className="w-full sm:w-auto"
+                  size="lg"
+                >
+                  {isInitializingCamera ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Initializing...
+                    </>
+                  ) : (
+                    <>
+                      <VideoIcon className="mr-2 h-4 w-4" />
+                      Record Video
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => videoUploadInputRef.current?.click()}
+                  disabled={processing}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  size="lg"
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Video
+                    </>
+                  )}
+                </Button>
+                <input
+                  ref={videoUploadInputRef}
+                  type="file"
+                  accept="video/mp4,video/mpeg,video/quicktime,video/x-msvideo,video/webm"
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                />
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className={`border-2 rounded-lg p-3 sm:p-4 ${
