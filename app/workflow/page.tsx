@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/input';
 import { Loader2, VideoIcon, Square, MessageSquare, Send, SwitchCamera, X, BookOpen, Lock, Unlock, Video } from 'lucide-react';
 import { useTask } from '../contexts/TaskContext';
+import NodeBrainGraph from '../components/NodeBrainGraph';
 
 const LOCK_STORAGE_KEY = 'preceptra-upload-locked';
 
@@ -958,44 +959,7 @@ function WorkflowPageContent() {
                   </Card>
                 )}
 
-                {loadingVideos ? (
-                  <div className="text-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-                    <p className="text-muted-foreground">Loading videos...</p>
-                  </div>
-                ) : videos.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Video className="mx-auto mb-4 h-12 w-12" />
-                    <p>No videos found for this task.</p>
-                    <p className="text-sm mt-2">Record videos to see them here.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {videos.map((video) => (
-                      <div
-                        key={video.name}
-                        className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                            <Video className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{video.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {video.transcribed ? 'Transcribed' : 'Not transcribed'}
-                            </p>
-                          </div>
-                        </div>
-                        {video.transcribed && (
-                          <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                            Transcribed
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <NodeBrainGraph />
               </CardContent>
             </Card>
           )}
