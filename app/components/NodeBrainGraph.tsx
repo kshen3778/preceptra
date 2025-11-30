@@ -62,8 +62,8 @@ export default function NodeBrainGraph() {
                 if (plotlyDiv && iframeWindow && (iframeWindow as any).Plotly) {
                   // Make all edges visible
                   const Plotly = (iframeWindow as any).Plotly;
-                  const currentData = plotlyDiv.data || [];
-                  const updates: any = {};
+                  const plotlyElement = plotlyDiv as any; // Plotly adds data property to the element
+                  const currentData = plotlyElement.data || [];
                   
                   // Update visibility for all traces
                   currentData.forEach((trace: any, index: number) => {
