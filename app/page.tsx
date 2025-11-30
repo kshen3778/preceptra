@@ -38,8 +38,8 @@ export default function Home() {
     <div className="container mx-auto px-6 py-12">
       <div className="mb-12 text-center">
         <h1 className="mb-4 text-4xl font-bold">Welcome to Preceptra</h1>
-        <p className="text-lg text-muted-foreground">
-          Transform your team&apos;s knowledge into procedures through AI-powered transcription and analysis.
+        <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          Capture your team's knowledge from video, audio, or text and turn it into a helpful assistant that creates procedures, answers questions, and guides employees when they need it.
         </p>
       </div>
 
@@ -102,10 +102,10 @@ export default function Home() {
                 <Upload className="h-8 w-8" />
               </div>
               <CardTitle className="text-xl mb-2">
-                Upload Videos
+                Capture Knowledge
               </CardTitle>
               <CardDescription className="text-sm">
-                Upload videos and automatically generate accurate transcriptions using AI.
+                Record or upload video, audio, or text from your team's work. The system captures what's said, what's done, and what's written.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -116,10 +116,10 @@ export default function Home() {
                 <BookOpen className="h-8 w-8" />
               </div>
               <CardTitle className="text-xl mb-2">
-                Create Knowledge Lakes
+                Optimize Workflow
               </CardTitle>
               <CardDescription className="text-sm">
-                Build a searchable repository of your company's know-how from video transcripts and procedures.
+                Analyze captured knowledge to identify bottlenecks, inefficiencies, and opportunities to optimize your workflow and improve how work gets done.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -130,10 +130,10 @@ export default function Home() {
                 <MessageSquare className="h-8 w-8" />
               </div>
               <CardTitle className="text-xl mb-2">
-                Speed Up Training
+                Assist Employees
               </CardTitle>
               <CardDescription className="text-sm">
-                Reduce downtime and accelerate training with instant access to your team's collective knowledge.
+                Employees can ask questions and get personalized answers based on their situation and what they need to know.
               </CardDescription>
             </CardHeader>
           </Card>

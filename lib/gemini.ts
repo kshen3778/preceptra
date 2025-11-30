@@ -270,24 +270,63 @@ export async function embedText(text: string): Promise<number[]> {
 function chunkTranscript(transcript: any, chunkSize: number = 5): Array<{
   text: string;
   videoName: string;
-  startTime: number;
-  endTime: number;
+  startTime: number | null;
+  endTime: number | null;
+  hasTimestamps: boolean;
 }> {
-  const chunks = [];
+  const chunks: Array<{
+    text: string;
+    videoName: string;
+    startTime: number | null;
+    endTime: number | null;
+    hasTimestamps: boolean;
+  }> = [];
   // Support both new format (audio_transcript) and legacy format (segments)
   const segments = transcript.audio_transcript || transcript.segments || [];
+  
+  // Check if this is text-only content
+  // Text-only content typically has:
+  // 1. Empty visual_description array
+  // 2. All timestamps are 0 or very small (artificial timestamps for text chunks)
+  const hasVisualDescription = transcript.visual_description && transcript.visual_description.length > 0;
+  const hasMeaningfulTimestamps = segments.length > 0 && segments.some((s: any) => {
+    const start = s.start ?? 0;
+    const end = s.end ?? 0;
+    // Consider timestamps meaningful if they're > 5 seconds (real audio/video would have longer segments)
+    return start > 5 || end > 5;
+  });
+  const hasTimestamps = hasVisualDescription || hasMeaningfulTimestamps;
+
+  // If no segments, try to extract text from the transcript itself (for text-only content)
+  if (segments.length === 0 && transcript.text) {
+    // For text-only content, chunk by paragraphs or sentences
+    const textChunks = transcript.text.split(/\n\n+/).filter((chunk: string) => chunk.trim().length > 0);
+    textChunks.forEach((text: string, idx: number) => {
+      chunks.push({
+        text: text.trim(),
+        videoName: transcript.videoName || 'unknown',
+        startTime: null,
+        endTime: null,
+        hasTimestamps: false,
+      });
+    });
+    return chunks;
+  }
 
   for (let i = 0; i < segments.length; i += chunkSize) {
     const chunkSegments = segments.slice(i, i + chunkSize);
-    const text = chunkSegments.map((s: any) => s.speech).join(' ');
-    const startTime = chunkSegments[0]?.start || 0;
-    const endTime = chunkSegments[chunkSegments.length - 1]?.end || 0;
+    const text = chunkSegments.map((s: any) => s.speech || s.text || '').join(' ').trim();
+    if (!text) continue;
+    
+    const startTime = chunkSegments[0]?.start;
+    const endTime = chunkSegments[chunkSegments.length - 1]?.end;
 
     chunks.push({
       text,
       videoName: transcript.videoName || 'unknown',
-      startTime,
-      endTime,
+      startTime: hasTimestamps ? (startTime ?? null) : null,
+      endTime: hasTimestamps ? (endTime ?? null) : null,
+      hasTimestamps,
     });
   }
 
@@ -337,8 +376,13 @@ export async function answerQuestion(
   // Format chunks for the model
   const chunksText = topChunks
     .map(
-      (item, idx) =>
-        `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s):\n${item.chunk.text}`
+      (item, idx) => {
+        if (item.chunk.hasTimestamps && item.chunk.startTime !== null && item.chunk.endTime !== null) {
+          return `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s):\n${item.chunk.text}`;
+        } else {
+          return `Chunk ${idx + 1} (from ${item.chunk.videoName}):\n${item.chunk.text}`;
+        }
+      }
     )
     .join('\n\n');
 
@@ -425,8 +469,11 @@ export async function answerQuestion(
       // Remove sources section from markdown
       markdown = markdown.replace(/##\s+Sources?\s*\n\n[\s\S]*?(?=\n##|$)/i, '').trim();
     } else {
-      // Fallback: use default sources from top chunks
-      sources = topChunks.map((item, idx) => `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s)`);
+      // Fallback: use default sources from top chunks - just show filename, deduplicated
+      const uniqueFilenames = Array.from(new Set(topChunks.map((item) => item.chunk.videoName)));
+      sources = uniqueFilenames.map((filename) => {
+        return `(${filename})`;
+      });
     }
     
     console.log('[AnswerQuestion] Extracted markdown, length:', markdown.length, 'chars');
@@ -444,10 +491,13 @@ export async function answerQuestion(
       console.error('[AnswerQuestion] Error message:', error.message);
     }
     
-    // Final fallback: return the raw text with default sources
+    // Final fallback: return the raw text with default sources - just show filename, deduplicated
+    const uniqueFilenames = Array.from(new Set(topChunks.map((item) => item.chunk.videoName)));
     return {
       markdown: text.trim(),
-      sources: topChunks.map((item, idx) => `Chunk ${idx + 1} (from ${item.chunk.videoName}, ${item.chunk.startTime}s-${item.chunk.endTime}s)`),
+      sources: uniqueFilenames.map((filename) => {
+        return `(${filename})`;
+      }),
     };
   }
 }

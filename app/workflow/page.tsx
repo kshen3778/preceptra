@@ -218,7 +218,7 @@ function WorkflowPageContent() {
   const openCamera = useCallback(async (facingMode: 'user' | 'environment' = 'environment') => {
     // Check if uploads are locked
     if (getLockState()) {
-      alert('Uploads are currently locked. Please unlock uploads in the Videos page to record new videos.');
+      alert('Uploads are currently locked. Please unlock uploads in the Knowledge Content page to add new content.');
       return;
     }
 
@@ -720,7 +720,7 @@ function WorkflowPageContent() {
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Task Knowledge Lake</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          A searchable lake of your team's knowledge, extracted right from uploaded videos.
+          A searchable lake of your team's knowledge, extracted right from uploaded content.
         </p>
       </div>
 
@@ -729,7 +729,7 @@ function WorkflowPageContent() {
           <CardContent className="py-12">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-lg font-semibold mb-2">Processing Video</p>
+              <p className="text-lg font-semibold mb-2">Processing Content</p>
               <p className="text-sm text-muted-foreground">
                 Generating procedure...
               </p>
@@ -750,7 +750,7 @@ function WorkflowPageContent() {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Videos
+                Knowledge Content
               </button>
               {sop && (
                 <button
@@ -782,9 +782,9 @@ function WorkflowPageContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Videos</CardTitle>
+                    <CardTitle>Knowledge Content</CardTitle>
                     <CardDescription>
-                      Manage videos and upload settings
+                      Manage your knowledge content and upload settings
                     </CardDescription>
                   </div>
                   {isCabinFilterTask ? (
@@ -829,7 +829,7 @@ function WorkflowPageContent() {
                   <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <p className="text-sm font-medium text-orange-900">LOCKED</p>
                     <p className="text-xs text-orange-800 mt-1">Admins can lock tasks to prevent uploads by employees. Please move to Procedure Tab</p>
-                    <p className="text-xs text-orange-800 mt-1">More videos you add the more accurate it becomes.</p>
+                    <p className="text-xs text-orange-800 mt-1">More content you add the more accurate it becomes.</p>
                   </div>
                 )}
                 {!isCabinFilterTask && isLocked && (
@@ -842,9 +842,9 @@ function WorkflowPageContent() {
                 {!sop && !isCabinFilterTask && (
                   <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
                     <CardHeader>
-                      <CardTitle>Record Video {isLocked && !isFilesystemTask(taskName) ? '' : isLocked ? <span className="ml-2 text-sm font-normal text-orange-600">(LOCKED)</span> : ''}</CardTitle>
+                      <CardTitle>Add Content {isLocked && !isFilesystemTask(taskName) ? '' : isLocked ? <span className="ml-2 text-sm font-normal text-orange-600">(LOCKED)</span> : ''}</CardTitle>
                       <CardDescription>
-                      A searchable lake of your team’s real knowledge, extracted from uploaded videos.
+                      A searchable lake of your team's real knowledge, extracted from uploaded content.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -969,9 +969,9 @@ function WorkflowPageContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Standard Operating Procedure</CardTitle>
+                    <CardTitle>Procedural Knowledge</CardTitle>
                     <CardDescription>
-                      Generated procedure from your video
+                      Generated procedure from your content
                     </CardDescription>
                   </div>
                   <Button
@@ -1043,7 +1043,7 @@ function WorkflowPageContent() {
                     )}
                   </>
                 ) : (
-                  <p className="text-muted-foreground">No procedure available. Record a video to generate one.</p>
+                  <p className="text-muted-foreground">No procedure available. Add content to generate one.</p>
                 )}
               </CardContent>
             </Card>

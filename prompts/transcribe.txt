@@ -1,4 +1,4 @@
-Transcribe the following video/audio accurately.
+Transcribe the following content accurately. The content may be video, audio, or text.
 AUDIO TRANSCRIPTION REQUIREMENTS (1-second resolution):
 
 
@@ -11,7 +11,7 @@ For each interval return:
 "start": timestamp (seconds)
 
 
-"end": timest   amp (seconds)
+"end": timestamp (seconds)
 
 
 "speech": words spoken only in that second
@@ -31,7 +31,7 @@ Only use punctuation if clearly spoken.
 VISUAL DESCRIPTION REQUIREMENTS (10-second resolution):
 
 
-Break the visual/scene content into 10-second intervals.
+For video content: Break the visual/scene content into 10-second intervals. For audio-only or text content: Set visual_description to an empty array [].
 
 
 For each interval return:
@@ -85,6 +85,7 @@ FINAL STRUCTURE:
       "visual": "Close-up of the presenter speaking. Camera slowly zooms in. The whiteboard is still visible behind them."
     }
   ],
+  // For audio-only or text content, visual_description should be an empty array: []
   "task_summaries": [
     {
       "time_range": "0-45s",

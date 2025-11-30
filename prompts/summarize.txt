@@ -1,7 +1,9 @@
-You are generating a Standard Operating Procedure (SOP) from multiple video transcripts of expert demonstrations.
+You are generating Procedural Knowledge from transcripts of expert demonstrations. The transcripts may come from video, audio, or text content.
 
 Objective:
 Generate a new SOP entirely from observed workflows in the transcripts. The goal is to create a ground-truth SOP that reflects what operators actually do, including tribal knowledge, undocumented checks, shortcuts, implicit sequencing, and decision rules.
+
+IMPORTANT: If the content does not contain procedural information (e.g., it's general discussion, Q&A, documentation, or non-procedural content), you should respond with a message indicating that the content has been saved but cannot be used to generate a procedure. In this case, return a clear message in markdown format explaining that the content was saved and suggest uploading procedural data for procedure generation.
 
 Instructions:
 1. Ignore any pre-existing SOP. Do not reference or modify prior documentation.
@@ -12,7 +14,7 @@ Instructions:
 6. Include decision rules, branching logic, or safety/quality checks visible in the transcripts.
 7. Format the SOP as clear, well-structured Markdown with headings, lists, and step-by-step instructions.
 8. Include any important notes or observations in a separate notes field.
-9. IMPORTANT: For each major step or instruction, cite the source video and approximate timestamp where that information came from. Include these citations inline in the markdown using the format: `(Source: [videoName] at ~[timestamp]s)`
+9. IMPORTANT: For each major step or instruction, cite the source filename where that information came from. Use the format: `([filename])` - just the filename in parentheses, no "Source:" prefix and no timestamps.
 
 Input:
 You will receive a JSON array of transcript objects. Each transcript contains:
@@ -36,18 +38,31 @@ This procedure covers the standard process for opening and preparing the cash re
 ## Steps
 
 ### Step 1: Verify Cash Drawer
-Count the starting cash to ensure it matches the expected amount. (Source: training_video_1.mp4 at ~45s)
+Count the starting cash to ensure it matches the expected amount. (training_video_1.mp4)
 
 ### Step 2: Log Into System
-Enter your employee ID and password into the POS terminal. (Source: training_video_2.mp4 at ~12s)
+Enter your employee ID and password into the POS terminal. (training_video_2.mp4)
 
 ### Step 3: Check Receipt Paper
-Verify that the receipt printer has adequate paper for the shift. (Source: training_video_1.mp4 at ~78s)
+Verify that the receipt printer has adequate paper for the shift. (training_video_1.mp4)
 
 ## Notes
 Most operators check the receipt paper before logging in, even though the formal SOP says to do it after. Two operators mentioned always keeping extra receipt rolls under the counter.
 
 Requirements:
 - Use proper Markdown formatting: # for main title, ## for sections, ### for subsections, - or 1. for lists
-- Include source citations inline using the format: (Source: [videoName] at ~[timestamp]s)
+- Include source citations inline using the format: ([filename]) - just the filename in parentheses
 - Write naturally - no need to escape quotes or worry about JSON formatting
+- If the content cannot be used to generate a procedure, return a message like:
+
+# Content Saved, Knowledge Added For Search
+
+Your content has been successfully saved and added to the knowledge base for search. However, this content does not appear to contain procedural information suitable for generating Procedural Knowledge.
+
+To generate a procedure, please upload content that includes:
+- Step-by-step instructions or demonstrations
+- Procedural workflows or processes
+- Task demonstrations with clear actions
+- Operational procedures or guidelines
+
+You can upload video, audio, or text files that contain procedural information.
