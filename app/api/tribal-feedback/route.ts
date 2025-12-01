@@ -91,55 +91,55 @@ export async function POST(request: NextRequest) {
       }
     } else if (taskName) {
       // Load from storage (for workflow page)
-      const transcripts = await loadTranscripts(taskName);
-      const latestSOP = await getLatestSOP(taskName);
+    const transcripts = await loadTranscripts(taskName);
+    const latestSOP = await getLatestSOP(taskName);
 
       console.log('[TribalFeedback] Transcripts loaded from storage:', transcripts.length);
       console.log('[TribalFeedback] Latest SOP loaded from storage:', latestSOP ? 'Yes' : 'No');
 
-      if (transcripts.length === 0 && !latestSOP) {
-        return NextResponse.json(
-          { error: 'No transcripts or procedural knowledge found for this task. Please add content first.' },
-          { status: 404 }
-        );
-      }
+    if (transcripts.length === 0 && !latestSOP) {
+      return NextResponse.json(
+        { error: 'No transcripts or procedural knowledge found for this task. Please add content first.' },
+        { status: 404 }
+      );
+    }
+    
+    if (latestSOP) {
+      knowledgeContext += `## Procedural Knowledge\n\n${latestSOP.markdown}\n\n`;
+    }
 
-      if (latestSOP) {
-        knowledgeContext += `## Procedural Knowledge\n\n${latestSOP.markdown}\n\n`;
-      }
-
-      if (transcripts.length > 0) {
-        knowledgeContext += `## Expert Demonstrations\n\n`;
-        transcripts.forEach((transcript, idx) => {
-          const videoName = transcript.videoName || `demonstration-${idx + 1}`;
-          knowledgeContext += `### ${videoName}\n\n`;
-          
-          // Add audio transcript if available
-          if (transcript.audio_transcript && transcript.audio_transcript.length > 0) {
-            knowledgeContext += `**Audio Transcript:**\n`;
-            transcript.audio_transcript.forEach((segment: any) => {
-              const text = segment.text || segment.transcript || '';
-              const timestamp = segment.timestamp || segment.start || '';
-              if (text) {
-                knowledgeContext += `- [${timestamp}] ${text}\n`;
-              }
-            });
-            knowledgeContext += `\n`;
-          }
-          
-          // Add visual descriptions if available
-          if (transcript.visual_description && transcript.visual_description.length > 0) {
-            knowledgeContext += `**Visual Actions:**\n`;
-            transcript.visual_description.forEach((segment: any) => {
-              const description = segment.description || segment.text || '';
-              const timestamp = segment.timestamp || segment.start || '';
-              if (description) {
-                knowledgeContext += `- [${timestamp}] ${description}\n`;
-              }
-            });
-            knowledgeContext += `\n`;
-          }
-        });
+    if (transcripts.length > 0) {
+      knowledgeContext += `## Expert Demonstrations\n\n`;
+      transcripts.forEach((transcript, idx) => {
+        const videoName = transcript.videoName || `demonstration-${idx + 1}`;
+        knowledgeContext += `### ${videoName}\n\n`;
+        
+        // Add audio transcript if available
+        if (transcript.audio_transcript && transcript.audio_transcript.length > 0) {
+          knowledgeContext += `**Audio Transcript:**\n`;
+          transcript.audio_transcript.forEach((segment: any) => {
+            const text = segment.text || segment.transcript || '';
+            const timestamp = segment.timestamp || segment.start || '';
+            if (text) {
+              knowledgeContext += `- [${timestamp}] ${text}\n`;
+            }
+          });
+          knowledgeContext += `\n`;
+        }
+        
+        // Add visual descriptions if available
+        if (transcript.visual_description && transcript.visual_description.length > 0) {
+          knowledgeContext += `**Visual Actions:**\n`;
+          transcript.visual_description.forEach((segment: any) => {
+            const description = segment.description || segment.text || '';
+            const timestamp = segment.timestamp || segment.start || '';
+            if (description) {
+              knowledgeContext += `- [${timestamp}] ${description}\n`;
+            }
+          });
+          knowledgeContext += `\n`;
+        }
+      });
       }
     } else {
       return NextResponse.json(

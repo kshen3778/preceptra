@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, Suspense } from 'react';
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '../components/ui/button';
@@ -80,7 +80,7 @@ function WorkflowPageContent() {
   const [processing, setProcessing] = useState(false);
   const [sop, setSop] = useState<{ markdown: string; notes: string } | null>(null);
   const [loadingSOP, setLoadingSOP] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('videos');
+  const [activeTab, setActiveTab] = useState<TabType>('sop');
   const [isLocked, setIsLocked] = useState(false);
   const [videos, setVideos] = useState<{ name: string; transcribed: boolean }[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -93,6 +93,8 @@ function WorkflowPageContent() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [feedbackVideoRef, setFeedbackVideoRef] = useState<HTMLVideoElement | null>(null);
   const feedbackFileInputRef = useRef<HTMLInputElement>(null);
+  const previousTaskNameRef = useRef<string | null>(null);
+  const hasInitializedTabRef = useRef<boolean>(false);
 
   // Check lock state
   useEffect(() => {
@@ -119,14 +121,30 @@ function WorkflowPageContent() {
     };
   }, []);
 
+  // Set initial tab synchronously before paint - ensure it's 'sop' if taskName exists
+  useLayoutEffect(() => {
+    if (!hasInitializedTabRef.current && taskName) {
+      hasInitializedTabRef.current = true;
+      setActiveTab('sop');
+      previousTaskNameRef.current = taskName;
+    }
+  }, [taskName]);
+
   // Load existing SOP and videos when task changes
   useEffect(() => {
     if (taskName) {
+      // Reset to sop tab when task changes (will show loading state while SOP loads)
+      if (previousTaskNameRef.current !== taskName) {
+        previousTaskNameRef.current = taskName;
+        setActiveTab('sop');
+      }
       loadExistingSOP();
       loadVideos();
     } else {
       setSop(null);
       setVideos([]);
+      previousTaskNameRef.current = null;
+      setActiveTab('videos');
     }
   }, [taskName]);
 
@@ -593,14 +611,14 @@ function WorkflowPageContent() {
         setIsCameraOpen(false);
         setIsRecording(false);
 
-        // Check if we're in feedback mode
-        const isFeedbackMode = activeTab === 'tribalFeedback';
+          // Check if we're in feedback mode
+          const isFeedbackMode = activeTab === 'tribalFeedback';
 
-        if (isFeedbackMode) {
-          setProcessingFeedback(true);
-        } else {
-          setProcessing(true);
-        }
+          if (isFeedbackMode) {
+            setProcessingFeedback(true);
+          } else {
+            setProcessing(true);
+          }
 
         try {
           const normalizedMimeType = currentMimeTypeRef.current.split(';')[0];
@@ -824,6 +842,16 @@ function WorkflowPageContent() {
           <div className="mb-4 border-b border-border">
             <nav className="flex space-x-1 overflow-x-auto">
               <button
+                onClick={() => setActiveTab('sop')}
+                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  (activeTab as TabType) === 'sop'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Procedure
+              </button>
+              <button
                 onClick={() => setActiveTab('videos')}
                 className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === 'videos'
@@ -833,18 +861,6 @@ function WorkflowPageContent() {
               >
                 Knowledge Content
               </button>
-              {sop && (
-                <button
-                  onClick={() => setActiveTab('sop')}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                    (activeTab as TabType) === 'sop'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Procedure
-                </button>
-              )}
               <button
                 onClick={() => setActiveTab('questions')}
                 className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
@@ -1055,7 +1071,7 @@ function WorkflowPageContent() {
             </Card>
           )}
 
-          {(activeTab as TabType) === 'sop' && sop && (
+          {(activeTab as TabType) === 'sop' && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -1065,25 +1081,27 @@ function WorkflowPageContent() {
                       Generated procedure from your content
                     </CardDescription>
                   </div>
-                  <Button
-                    onClick={regenerateProcedure}
-                    disabled={loadingSOP}
-                    variant="default"
-                    size="sm"
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90"
-                  >
-                    {loadingSOP ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Regenerating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <VideoIcon className="h-4 w-4" />
-                        <span>Regenerate Procedure</span>
-                      </>
-                    )}
-                  </Button>
+                  {sop && (
+                    <Button
+                      onClick={regenerateProcedure}
+                      disabled={loadingSOP}
+                      variant="default"
+                      size="sm"
+                      className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                    >
+                      {loadingSOP ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Regenerating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <VideoIcon className="h-4 w-4" />
+                          <span>Regenerate Procedure</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -1128,8 +1146,39 @@ function WorkflowPageContent() {
                     </div>
                     {sop.notes && (
                       <div className="mt-6 pt-5 border-t border-border">
-                        <h3 className="text-lg font-semibold mb-2">Notes</h3>
-                        <p className="text-muted-foreground">{sop.notes}</p>
+                        <h3 className="text-lg font-semibold mb-3 text-foreground">Notes</h3>
+                        <div className="prose prose-slate max-w-none dark:prose-invert">
+                          <ReactMarkdown
+                            components={{
+                              h1: ({ node, ...props }: any) => (
+                                <h1 className="text-2xl font-bold mt-6 mb-3 pb-2 border-b border-border text-foreground" {...props} />
+                              ),
+                              h2: ({ node, ...props }: any) => (
+                                <h2 className="text-xl font-semibold mt-5 mb-2.5 text-foreground" {...props} />
+                              ),
+                              h3: ({ node, ...props }: any) => (
+                                <h3 className="text-lg font-semibold mt-4 mb-2 text-foreground" {...props} />
+                              ),
+                              p: ({ node, ...props }: any) => (
+                                <p className="mb-3 leading-7 text-foreground" {...props} />
+                              ),
+                              ul: ({ node, ...props }: any) => (
+                                <ul className="mb-3 ml-6 list-disc space-y-1.5 text-foreground" {...props} />
+                              ),
+                              ol: ({ node, ...props }: any) => (
+                                <ol className="mb-3 ml-6 list-decimal space-y-1.5 text-foreground" {...props} />
+                              ),
+                              li: ({ node, ...props }: any) => (
+                                <li className="leading-7" {...props} />
+                              ),
+                              strong: ({ node, ...props }: any) => (
+                                <strong className="font-semibold text-foreground" {...props} />
+                              ),
+                            }}
+                          >
+                            {sop.notes}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     )}
                   </>
