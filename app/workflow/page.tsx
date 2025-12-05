@@ -852,16 +852,6 @@ function WorkflowPageContent() {
                 Procedure
               </button>
               <button
-                onClick={() => setActiveTab('videos')}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === 'videos'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Knowledge Content
-              </button>
-              <button
                 onClick={() => setActiveTab('questions')}
                 className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   (activeTab as TabType) === 'questions'
@@ -879,7 +869,7 @@ function WorkflowPageContent() {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Get Tribal Feedback
+                Get Feedback
               </button>
             </nav>
           </div>
@@ -889,10 +879,7 @@ function WorkflowPageContent() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Knowledge Content</CardTitle>
-                    <CardDescription>
-                      Manage your knowledge content and upload settings
-                    </CardDescription>
+                    <CardTitle>Knowledge Graph</CardTitle>
                   </div>
                   {isCabinFilterTask ? (
                     <div className="text-sm font-medium text-orange-600">
@@ -932,19 +919,6 @@ function WorkflowPageContent() {
                 </div>
               </CardHeader>
               <CardContent>
-                {isCabinFilterTask && (
-                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm font-medium text-orange-900">LOCKED</p>
-                    <p className="text-xs text-orange-800 mt-1">Admins can lock tasks to prevent uploads by employees. Please move to Procedure Tab</p>
-                    <p className="text-xs text-orange-800 mt-1">More content you add the more accurate it becomes.</p>
-                  </div>
-                )}
-                {!isCabinFilterTask && isLocked && (
-                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm font-medium text-orange-900">LOCKED</p>
-                    <p className="text-xs text-orange-800 mt-1">Uploads are locked to prevent unwanted additions</p>
-                  </div>
-                )}
                 
                 {!sop && !isCabinFilterTask && (
                   <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
@@ -1309,7 +1283,7 @@ function WorkflowPageContent() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Get Tribal Feedback</CardTitle>
+                  <CardTitle>Get Feedback</CardTitle>
                   <CardDescription>
                     Record or upload a video of yourself performing the task to get feedback based on expert knowledge
                   </CardDescription>
