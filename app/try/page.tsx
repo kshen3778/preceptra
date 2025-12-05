@@ -1070,7 +1070,7 @@ function TryPageContent() {
                         : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Get Tribal Feedback
+                    Evaluate
                   </button>
             </nav>
           </div>
@@ -1279,7 +1279,7 @@ function TryPageContent() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Get Tribal Feedback</CardTitle>
+                  <CardTitle>Evaluate</CardTitle>
                   <CardDescription>
                     Record or upload a video of yourself performing the task to get feedback based on expert knowledge
                   </CardDescription>
