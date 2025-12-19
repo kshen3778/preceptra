@@ -54,7 +54,7 @@ function WorkflowPageContent() {
     }
   }, [taskName, selectedTask, setSelectedTask]);
 
-  // Check if task is a filesystem task (like Cabin Filter Replacement)
+  // Check if task is a filesystem task
   const isFilesystemTask = (task: string | null): boolean => {
     if (!task) return false;
     // Get local tasks from localStorage
@@ -63,8 +63,6 @@ function WorkflowPageContent() {
     // If task is not in local tasks, it's a filesystem task
     return !localTasks.includes(task);
   };
-
-  const isCabinFilterTask = taskName === 'Cabin Filter Replacement';
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -175,38 +173,6 @@ function WorkflowPageContent() {
     }
   };
 
-  const regenerateProcedure = async () => {
-    if (!taskName) return;
-    
-    setLoadingSOP(true);
-    try {
-      // Call summarize API to regenerate SOP from existing transcripts
-      const summarizeResponse = await fetch('/api/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskName }),
-      });
-      
-      if (!summarizeResponse.ok) {
-        const errorData = await summarizeResponse.json();
-        throw new Error(errorData.error || 'Failed to regenerate procedure');
-      }
-      
-      const summarizeData = await summarizeResponse.json();
-      setSop({
-        markdown: summarizeData.markdown || '',
-        notes: summarizeData.notes || '',
-      });
-      
-      // Reload SOP to get the saved version
-      await loadExistingSOP();
-    } catch (error) {
-      console.error('Failed to regenerate procedure:', error);
-      alert(error instanceof Error ? error.message : 'Failed to regenerate procedure. Please try again.');
-    } finally {
-      setLoadingSOP(false);
-    }
-  };
 
   const loadVideos = async () => {
     if (!taskName) return;
@@ -881,11 +847,7 @@ function WorkflowPageContent() {
                   <div>
                     <CardTitle>Knowledge Graph</CardTitle>
                   </div>
-                  {isCabinFilterTask ? (
-                    <div className="text-sm font-medium text-orange-600">
-                      LOCKED
-                    </div>
-                  ) : !isFilesystemTask(taskName) ? (
+                  {!isFilesystemTask(taskName) ? (
                     <Button
                       onClick={() => openCamera()}
                       disabled={isInitializingCamera}
@@ -920,7 +882,7 @@ function WorkflowPageContent() {
               </CardHeader>
               <CardContent>
                 
-                {!sop && !isCabinFilterTask && (
+                {!sop && (
                   <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
                     <CardHeader>
                       <CardTitle>Add Content {isLocked && !isFilesystemTask(taskName) ? '' : isLocked ? <span className="ml-2 text-sm font-normal text-orange-600">(LOCKED)</span> : ''}</CardTitle>
@@ -1055,27 +1017,6 @@ function WorkflowPageContent() {
                       Generated procedure from your content
                     </CardDescription>
                   </div>
-                  {sop && (
-                    <Button
-                      onClick={regenerateProcedure}
-                      disabled={loadingSOP}
-                      variant="default"
-                      size="sm"
-                      className="flex items-center gap-2 bg-primary hover:bg-primary/90"
-                    >
-                      {loadingSOP ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Regenerating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <VideoIcon className="h-4 w-4" />
-                          <span>Regenerate Procedure</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -1414,6 +1355,7 @@ function WorkflowPageContent() {
                                 throw new Error(`Failed to upload to S3: ${s3UploadResponse.status} ${s3UploadResponse.statusText}`);
                               }
 
+                              console.log('[Workflow] Sending evaluation request with taskName:', taskName);
                               const feedbackResponse = await fetch('/api/tribal-feedback', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },

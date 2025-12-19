@@ -245,8 +245,11 @@ export async function loadSOPs(taskName: string): Promise<SOP[]> {
   const sopDir = path.join(process.cwd(), 'tasks', taskName, 'sop');
 
   try {
+    console.log('[loadSOPs] Looking for SOPs in:', sopDir);
     const files = await fs.readdir(sopDir);
+    console.log('[loadSOPs] Found files:', files);
     const jsonFiles = files.filter(file => file.endsWith('.json') && file.startsWith('sop-'));
+    console.log('[loadSOPs] JSON SOP files:', jsonFiles);
 
     const sops: SOP[] = [];
     for (const file of jsonFiles) {
@@ -259,8 +262,11 @@ export async function loadSOPs(taskName: string): Promise<SOP[]> {
     // Sort by creation date, newest first
     sops.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
+    console.log('[loadSOPs] Loaded', sops.length, 'SOPs for task:', taskName);
     return sops;
   } catch (error) {
+    // Log the error for debugging
+    console.error('[loadSOPs] Error loading SOPs for task:', taskName, 'Error:', error);
     // If sop directory doesn't exist, return empty array
     return [];
   }

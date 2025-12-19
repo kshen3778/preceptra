@@ -46,3 +46,7 @@ next-env.d.ts
 .cursor/
 .cursorrules
 .claude
+
+
+# Actlabs Files
+tasks/ActLab Demo/sop/*
