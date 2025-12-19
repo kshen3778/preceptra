@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { s3Key: providedS3Key, mimeType, taskName, transcript: providedTranscript, sop: providedSOP } = body;
+    const { s3Key: providedS3Key, mimeType, taskName, transcript: providedTranscript, sop: providedSOP, stepIndex, stepContent, evaluationMode } = body;
 
     if (!providedS3Key || typeof providedS3Key !== 'string') {
       return NextResponse.json(
@@ -156,10 +156,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Read the feedback prompt
-    const feedbackPrompt = await readPrompt('tribal-feedback');
+    let feedbackPrompt = await readPrompt('tribal-feedback');
+    
+    // Modify prompt based on evaluation mode
+    if (evaluationMode === 'step-by-step' && stepIndex !== undefined && stepContent) {
+      // Step-by-step evaluation: focus only on the specific step
+      feedbackPrompt = `You are analyzing a video of someone performing a SPECIFIC STEP of a task and providing feedback based on expert knowledge.
+
+Objective:
+Compare the person's performance in the video against ONLY the specific step provided below. Provide focused feedback on:
+- How well they followed this specific step
+- Any aspects of this step they missed or did incorrectly
+- Areas where they could improve for this step
+- What they did well for this step
+- Any safety concerns or best practices specific to this step
+
+IMPORTANT: Only evaluate the specific step provided below. Do not evaluate other steps or the entire procedure. Focus your feedback exclusively on this one step.
+
+## Step to Evaluate
+
+${stepContent}
+
+${feedbackPrompt.split('Objective:')[1]}`;
+    }
     
     // Combine prompt with knowledge context
-    const fullPrompt = `${feedbackPrompt}\n\n## Knowledge Base\n\n${knowledgeContext}\n\nNow analyze the provided video and provide feedback based on the knowledge base above.`;
+    let fullPrompt = `${feedbackPrompt}\n\n## Knowledge Base\n\n${knowledgeContext}`;
+    
+    if (evaluationMode === 'step-by-step' && stepIndex !== undefined) {
+      fullPrompt += `\n\nNow analyze the provided video and provide feedback focused ONLY on Step ${stepIndex + 1} shown above. Do not evaluate other steps.`;
+    } else {
+      fullPrompt += `\n\nNow analyze the provided video and provide feedback based on the knowledge base above.`;
+    }
 
     console.log('[TribalFeedback] Processing video with Gemini...');
 
