@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { verifyAdminPermissions } from '@/app/actions/adminActions'
+import { getSelectedOrganizationMembershipRole } from '@/app/actions/userActions'
 
 
 export async function middleware(request: NextRequest) {
@@ -12,7 +13,7 @@ export async function middleware(request: NextRequest) {
   
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
@@ -44,6 +45,9 @@ export async function middleware(request: NextRequest) {
 
   // Check if trying to access admin routes
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+  
+  // Check if trying to access sessions route
+  const isSessionsRoute = request.nextUrl.pathname.startsWith('/sessions')
 
   // If trying to access admin route, check if user has admin role
   if (isAdminRoute) {
@@ -65,6 +69,43 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
   }
+  // If trying to access sessions route, check if user is moderator
+  else if (isSessionsRoute) {
+    // If no user, redirect to login
+    if (!user) {
+      console.log("No authenticated user, redirecting to login")
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('message', 'You must be logged in to access this area')
+      return NextResponse.redirect(url)
+    }
+    
+    // Check if user is admin (admins can access sessions)
+    const { isAdmin, error: adminError } = await verifyAdminPermissions();
+    if (isAdmin && !adminError) {
+      // Admin can access, continue
+      return supabaseResponse;
+    }
+    
+    // Check if user is moderator in their selected organization
+    const { membership, error: membershipError } = await getSelectedOrganizationMembershipRole();
+    
+    if (membershipError || !membership) {
+      console.log("Unauthorized access to sessions: no organization membership or error:", membershipError)
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      url.searchParams.set('message', 'You must be a moderator in an organization to access sessions')
+      return NextResponse.redirect(url)
+    }
+    
+    if (membership.role !== 'moderator') {
+      console.log("Unauthorized access to sessions: user is not a moderator")
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      url.searchParams.set('message', 'Moderator access required to view sessions')
+      return NextResponse.redirect(url)
+    }
+  }
   // Regular authentication check for non-admin routes
   else if (!user && !isPublicRoute) {
     console.log("No authenticated user, redirecting to login")
@@ -76,7 +117,7 @@ export async function middleware(request: NextRequest) {
   // If user is logged in and trying to access login/signup, redirect to dashboard
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
