@@ -10,6 +10,14 @@ const authMiddleware = neonAuthMiddleware({
 });
 
 export default async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  
+  // Before running the Neon Auth middleware, allow verification page to be accessible without authentication
+  // (users need to verify before they can authenticate)
+  if (pathname === '/auth/verify-email' || pathname.startsWith('/auth/verify-email')) {
+    return NextResponse.next();
+  }
+  
   // Run the Neon Auth middleware first
   const authResponse = await authMiddleware(request);
   
@@ -24,8 +32,6 @@ export default async function proxy(request: NextRequest) {
     
     // If user exists but email is not verified, redirect to verification
     if (user && !user.emailVerified) {
-      const pathname = request.nextUrl.pathname;
-      
       // Allow access to auth pages (including verification), account pages, and sign-up page
       if (pathname.startsWith('/auth') || pathname.startsWith('/account')) {
         return authResponse || NextResponse.next();
