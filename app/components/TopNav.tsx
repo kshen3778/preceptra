@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { VideoIcon, Video, LogOut, User, ChevronDown, FileText, Menu, X, Home } from 'lucide-react';
 import { Button } from './ui/button';
+import { authClient } from '@/lib/auth';
 
 const navigation: Array<{ name: string; href: string; icon: any; step: number; description: string }> = [];
 
@@ -72,7 +73,7 @@ export default function TopNav() {
     }
     try {
       setIsUserMenuOpen(false);
-      await fetch('/api/logout', { method: 'POST' });
+      await authClient.signOut();
       router.push('/login');
       router.refresh();
     } catch (error) {
