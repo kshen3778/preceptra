@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { VideoIcon, Video, LogOut, User, ChevronDown, FileText, Menu, X, Home } from 'lucide-react';
+import { VideoIcon, Video, FileText, Menu, X, Home } from 'lucide-react';
 import { Button } from './ui/button';
-import { authClient } from '@/lib/auth';
+import { authClient } from '@/lib/auth/client';
+import { UserButton } from '@neondatabase/auth/react';
 
 const navigation: Array<{ name: string; href: string; icon: any; step: number; description: string }> = [];
 
@@ -14,9 +15,7 @@ export default function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Close menus when clicking outside
@@ -29,29 +28,12 @@ export default function TopNav() {
         return;
       }
       
-      // Check if click is inside the user menu (button or dropdown)
-      if (userMenuRef.current && userMenuRef.current.contains(target)) {
-        // Check if it's a link or button inside the dropdown
-        const isLinkOrButton = (target as Element).closest('a, button');
-        if (isLinkOrButton && userMenuRef.current.contains(isLinkOrButton)) {
-          // Allow the click to proceed, don't close menu yet
-          return;
-        }
-        return;
-      }
-      
       if (menuRef.current && !menuRef.current.contains(target)) {
         setIsMenuOpen(false);
       }
-      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
-        // Use setTimeout to allow click handlers to fire first
-        setTimeout(() => {
-          setIsUserMenuOpen(false);
-        }, 0);
-      }
     };
 
-    if (isMenuOpen || isUserMenuOpen) {
+    if (isMenuOpen) {
       // Use click with a slight delay to allow button clicks to fire first
       document.addEventListener('click', handleClickOutside);
     }
@@ -59,27 +41,12 @@ export default function TopNav() {
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [isMenuOpen, isUserMenuOpen]);
+  }, [isMenuOpen]);
 
   // Close menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
-
-  const handleLogout = async (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    try {
-      setIsUserMenuOpen(false);
-      await authClient.signOut();
-      router.push('/login');
-      router.refresh();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -133,49 +100,16 @@ export default function TopNav() {
             </Link>
 
             {/* User Menu */}
-            <div className="relative" ref={userMenuRef}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            <div className="flex items-center gap-2">
+              <Link
+                href="/tos"
+                className="flex items-center gap-1.5 md:gap-2 rounded-md px-2 md:px-3 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                title="Terms of Service"
               >
-                <User className="h-4 w-4" />
-                <span className="hidden lg:inline">User</span>
-                <ChevronDown className={cn(
-                  "h-4 w-4 transition-transform",
-                  isUserMenuOpen && "rotate-180"
-                )} />
-              </Button>
-
-              {isUserMenuOpen && (
-                <div 
-                  className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-md shadow-lg overflow-hidden z-50"
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  <Link
-                    href="/tos"
-                    className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors cursor-pointer"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsUserMenuOpen(false);
-                      router.push('/tos');
-                    }}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Terms of Service
-                  </Link>
-                  <button
-                    type="button"
-                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t cursor-pointer"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </button>
-                </div>
-              )}
+                <FileText className="h-4 w-4 flex-shrink-0" />
+                <span className="hidden lg:inline">Terms</span>
+              </Link>
+              <UserButton size="icon" />
             </div>
           </div>
 
@@ -196,43 +130,15 @@ export default function TopNav() {
             </Link>
 
             {/* User Menu Button (Mobile) */}
-            <div className="relative" ref={userMenuRef}>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            <div className="flex items-center gap-2">
+              <Link
+                href="/tos"
+                className="flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium transition-colors text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                title="Terms of Service"
               >
-                <User className="h-4 w-4" />
-              </Button>
-
-              {isUserMenuOpen && (
-                <div 
-                  className="absolute right-0 top-full mt-2 w-48 bg-background border rounded-md shadow-lg overflow-hidden z-50"
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  <Link
-                    href="/tos"
-                    className="flex items-center px-4 py-3 text-sm hover:bg-accent transition-colors cursor-pointer"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setIsUserMenuOpen(false);
-                      router.push('/tos');
-                    }}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Terms of Service
-                  </Link>
-                  <button
-                    type="button"
-                    className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-left border-t cursor-pointer"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </button>
-                </div>
-              )}
+                <FileText className="h-4 w-4" />
+              </Link>
+              <UserButton size="icon" />
             </div>
 
             {/* Hamburger Menu Button */}

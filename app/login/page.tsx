@@ -106,14 +106,22 @@ export default function LoginPage() {
 
       if (result.error) {
         setError(result.error.message || 'Invalid credentials');
+        setLoading(false);
       } else {
-        router.push('/');
-        router.refresh();
+        // Verify session was created before redirecting
+        const sessionResult = await authClient.getSession();
+        if (sessionResult.data?.session) {
+          // Use window.location for a hard redirect to ensure cookie is sent
+          window.location.href = '/';
+        } else {
+          // Fallback to router if session check fails
+          router.push('/');
+          router.refresh();
+        }
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Sign in error:', err);
-    } finally {
       setLoading(false);
     }
   };

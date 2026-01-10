@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import LayoutWrapper from "./components/LayoutWrapper";
+import { authClient } from '@/lib/auth/client';
+import { NeonAuthUIProvider, UserButton } from '@neondatabase/auth/react';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,11 +18,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <LayoutWrapper>
-          {children}
-        </LayoutWrapper>
+        <NeonAuthUIProvider
+          authClient={authClient}
+          redirectTo="/"
+          emailOTP
+        >
+          <LayoutWrapper>
+            {children}
+          </LayoutWrapper>
+        </NeonAuthUIProvider>
       </body>
     </html>
   );

@@ -9,16 +9,17 @@ import { TOSBanner } from './TOSModal';
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isLoginPage = pathname === '/login';
+  const isAuthPage = pathname?.startsWith('/auth');
+  const isAccountPage = pathname?.startsWith('/account');
   const isTryPage = pathname === '/try';
   const hasTaskParam = searchParams?.get('task');
   const showTopNavOnTryPage = isTryPage && hasTaskParam;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {!isLoginPage && (!isTryPage || showTopNavOnTryPage) && <TopNav />}
+      {!isAuthPage && !isAccountPage && (!isTryPage || showTopNavOnTryPage) && <TopNav />}
       <main className="flex-1 overflow-y-auto">
-        {!isLoginPage && (!isTryPage || showTopNavOnTryPage) && (
+        {!isAuthPage && !isAccountPage && (!isTryPage || showTopNavOnTryPage) && (
           <TOSBanner />
         )}
         {children}
