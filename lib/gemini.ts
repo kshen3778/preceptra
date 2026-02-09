@@ -1,18 +1,15 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
 
-let genAI: GoogleGenerativeAI;
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const EMBEDDING_MODEL = 'gemini-embedding-001'; // per https://ai.google.dev/gemini-api/docs/embeddings
 
-function getGenAI(): GoogleGenerativeAI {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not set');
-    }
-    genAI = new GoogleGenerativeAI(apiKey);
+function getApiKey(): string {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set');
   }
-  return genAI;
+  return apiKey;
 }
 
 /**
@@ -20,6 +17,57 @@ function getGenAI(): GoogleGenerativeAI {
  */
 function getModelName(): string {
   return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+}
+
+/**
+ * Call Gemini API via REST (curl-style). See https://ai.google.dev/api
+ */
+async function geminiFetch<T>(model: string, endpoint: string, body: object): Promise<T> {
+  const apiKey = getApiKey();
+  const url = `${GEMINI_API_BASE}/${model}:${endpoint}?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API ${endpoint} error ${res.status}: ${errText}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+/**
+ * Generate content via REST (generateContent). Request/response format per https://ai.google.dev/api
+ */
+async function generateContentREST(
+  model: string,
+  contents: Array<{ role?: string; parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> }>
+): Promise<string> {
+  const res = await geminiFetch<{
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  }>(model, 'generateContent', { contents });
+  const text = res.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (text == null) {
+    throw new Error('Gemini generateContent returned no text');
+  }
+  return text;
+}
+
+/**
+ * Embed one text via REST (embedContent). Uses embedding model per https://ai.google.dev/api (Embeddings).
+ */
+async function embedContentREST(text: string): Promise<number[]> {
+  const res = await geminiFetch<{ embedding?: { values: number[] } }>(
+    EMBEDDING_MODEL,
+    'embedContent',
+    { content: { parts: [{ text }] } }
+  );
+  const values = res.embedding?.values;
+  if (!values) {
+    throw new Error('Gemini embedContent returned no embedding');
+  }
+  return values;
 }
 
 /**
@@ -33,36 +81,26 @@ export async function readPrompt(promptName: string): Promise<string> {
 }
 
 /**
- * Transcribe a video file using Gemini
+ * Transcribe a video file using Gemini (REST API per https://ai.google.dev/api)
  * @param videoPath - Absolute path to the video file
  * @returns Transcript JSON object
  */
 export async function transcribeVideo(videoPath: string): Promise<any> {
-  const model = getGenAI().getGenerativeModel({ model: getModelName() });
-
-  // Read the prompt
   const prompt = await readPrompt('transcribe');
-
-  // Read video file
   const videoData = await fs.readFile(videoPath);
   const videoBase64 = videoData.toString('base64');
 
-  const result = await model.generateContent([
+  const text = await generateContentREST(getModelName(), [
     {
-      inlineData: {
-        data: videoBase64,
-        mimeType: 'video/mp4',
-      },
+      role: 'user',
+      parts: [
+        { inline_data: { mime_type: 'video/mp4', data: videoBase64 } },
+        { text: prompt },
+      ],
     },
-    prompt,
   ]);
 
-  const response = result.response;
-  const text = response.text();
-
-  // Parse JSON response
   try {
-    // Try to extract JSON from markdown code blocks if present
     const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/```\s*([\s\S]*?)\s*```/);
     const jsonText = jsonMatch ? jsonMatch[1] : text;
     return JSON.parse(jsonText);
@@ -94,33 +132,25 @@ export async function summarizeTranscripts(transcripts: any[]): Promise<{
 
   const modelName = getModelName();
   console.log('[Summarize] Using model:', modelName);
-  
-  // Use plain text model - no JSON enforcement
-  const model = getGenAI().getGenerativeModel({ 
-    model: modelName,
-  });
 
-  // Read the prompt
   const prompt = await readPrompt('summarize');
   console.log('[Summarize] Prompt loaded, length:', prompt.length, 'chars');
   console.log('[Summarize] Prompt preview (first 200 chars):', prompt.substring(0, 200));
 
-  // Format transcripts for the model
   const transcriptsText = JSON.stringify(transcripts, null, 2);
   console.log('[Summarize] Transcripts JSON size:', transcriptsText.length, 'chars');
-  console.log('[Summarize] Sending request to Gemini...');
+  console.log('[Summarize] Sending request to Gemini (REST)...');
 
   const startTime = Date.now();
-  const result = await model.generateContent([
-    prompt,
-    '\n\nTranscripts:\n',
-    transcriptsText,
+  const text = await generateContentREST(modelName, [
+    {
+      role: 'user',
+      parts: [{ text: prompt + '\n\nTranscripts:\n' + transcriptsText }],
+    },
   ]);
   const duration = Date.now() - startTime;
   console.log(`[Summarize] Gemini response received in ${duration}ms`);
 
-  const response = result.response;
-  const text = response.text();
   console.log('[Summarize] Raw response length:', text.length, 'chars');
   console.log('[Summarize] Raw response preview (first 500 chars):', text.substring(0, 500));
   if (text.length > 500) {
@@ -250,15 +280,12 @@ function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 /**
- * Generate embedding for text using Gemini
+ * Generate embedding for text using Gemini REST (embedContent). See https://ai.google.dev/api (Embeddings).
  * @param text - Text to embed
  * @returns Embedding vector
  */
 export async function embedText(text: string): Promise<number[]> {
-  const model = getGenAI().getGenerativeModel({ model: 'text-embedding-004' });
-
-  const result = await model.embedContent(text);
-  return result.embedding.values;
+  return embedContentREST(text);
 }
 
 /**
@@ -389,59 +416,47 @@ export async function answerQuestion(
   // Read the prompt
   const prompt = await readPrompt('question');
 
-  // Build the content array
-  const content: any[] = [
-    prompt,
-    '\n\nQuestion:\n',
-    question,
-    '\n\nTranscript Chunks:\n',
-    chunksText,
+  // Build parts for REST (https://ai.google.dev/api): text and optional inline_data
+  const parts: Array<{ text?: string; inline_data?: { mime_type: string; data: string } }> = [
+    {
+      text: [
+        prompt,
+        '\n\nQuestion:\n',
+        question,
+        '\n\nTranscript Chunks:\n',
+        chunksText,
+      ].join(''),
+    },
   ];
 
-  // Add media attachments if available
   if (media && media.length > 0) {
     console.log('[AnswerQuestion] Including media attachments:', media.length);
-    content.push('\n\n---\n\nUser has attached the following media to help with the question:\n');
-
+    parts.push({ text: '\n\n---\n\nUser has attached the following media to help with the question:\n' });
     for (const mediaItem of media) {
       try {
-        content.push({
-          inlineData: {
+        parts.push({
+          inline_data: {
+            mime_type: mediaItem.mimeType,
             data: mediaItem.base64,
-            mimeType: mediaItem.mimeType,
           },
         });
-        content.push(`\n(${mediaItem.type === 'image' ? 'Image' : 'Video'} attachment: ${mediaItem.filename})\n`);
+        parts.push({
+          text: `\n(${mediaItem.type === 'image' ? 'Image' : 'Video'} attachment: ${mediaItem.filename})\n`,
+        });
       } catch (error) {
         console.error('[AnswerQuestion] Failed to process media:', mediaItem.filename, error);
       }
     }
   }
 
-  // Add SOP context if available
   if (sop) {
     console.log('[AnswerQuestion] Including SOP context in prompt');
-    content.push(
-      '\n\n---\n\nLatest Standard Operating Procedure (SOP):\n',
-      sop.markdown,
-    );
-    if (sop.notes) {
-      content.push(
-        '\n\nSOP Notes:\n',
-        sop.notes,
-      );
-    }
+    parts.push({
+      text: '\n\n---\n\nLatest Standard Operating Procedure (SOP):\n' + sop.markdown + (sop.notes ? '\n\nSOP Notes:\n' + sop.notes : ''),
+    });
   }
 
-  // Use plain text model - no JSON enforcement
-  const model = getGenAI().getGenerativeModel({ 
-    model: getModelName(),
-  });
-
-  const result = await model.generateContent(content);
-
-  const response = result.response;
-  const text = response.text();
+  const text = await generateContentREST(getModelName(), [{ role: 'user', parts }]);
 
   console.log('[AnswerQuestion] Raw response length:', text.length, 'chars');
   console.log('[AnswerQuestion] Raw response preview (first 500 chars):', text.substring(0, 500));
